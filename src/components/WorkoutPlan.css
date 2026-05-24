@@ -1,0 +1,105 @@
+.workout-plan {
+  position: relative;
+}
+
+.plan-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-bottom: 1.25rem;
+}
+
+.btn-action {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  border-radius: var(--radius-sm);
+  transition: all 0.15s;
+}
+
+.btn-action:hover {
+  border-color: var(--accent-light);
+  color: var(--text);
+}
+
+.plan-content {
+  line-height: 1.75;
+}
+
+.plan-content h1 {
+  font-size: 1.6rem;
+  color: #a78bfa;
+  margin: 0 0 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--accent);
+}
+
+.plan-content h2 {
+  font-size: 1.25rem;
+  color: #c4b5fd;
+  margin: 1.75rem 0 0.75rem;
+  padding: 0.6rem 1rem;
+  background: rgba(124, 58, 237, 0.12);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.plan-content h3 {
+  font-size: 1rem;
+  color: #ddd6fe;
+  margin: 1.25rem 0 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.85rem;
+}
+
+.plan-content p {
+  color: var(--text);
+  margin-bottom: 0.4rem;
+}
+
+.plan-content strong {
+  color: #e2d9f3;
+  font-weight: 700;
+}
+
+.plan-content em {
+  color: #a78bfa;
+  font-style: italic;
+}
+
+.plan-content code {
+  background: rgba(124, 58, 237, 0.15);
+  color: #c4b5fd;
+  padding: 0.1em 0.4em;
+  border-radius: 4px;
+  font-size: 0.9em;
+  font-family: monospace;
+}
+
+.plan-content ul, .plan-content ol {
+  padding-left: 1.5rem;
+  margin: 0.5rem 0 0.75rem;
+}
+
+.plan-content li {
+  color: var(--text);
+  margin-bottom: 0.3rem;
+  padding-left: 0.25rem;
+}
+
+.plan-content li::marker {
+  color: var(--accent-light);
+}
+
+.plan-content hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 1.5rem 0;
+}
+
+.plan-content br {
+  line-height: 0.5;
+}
