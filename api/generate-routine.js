@@ -43,11 +43,22 @@ Puedes usar máquinas, cables, poleas, barras, mancuernas y todo el equipamiento
 }
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return res.status(500).json({ error: 'ANTHROPIC_API_KEY no está configurada en las variables de entorno de Vercel.' });
   }
 
   const { profile, selectedDays } = req.body;
+
+  if (!profile || !selectedDays) {
+    return res.status(400).json({ error: 'Faltan datos: profile y selectedDays son requeridos.' });
+  }
   const daysText = selectedDays.join(', ');
 
   const injurySection = buildInjurySection(profile.injuries);
@@ -112,6 +123,9 @@ ${profile.injuries ? `Recuerda la restricción de lesiones al elegir ejercicios 
     res.json({ routine: message.content[0].text });
   } catch (error) {
     console.error('Anthropic API error:', error.message);
-    res.status(500).json({ error: 'Error al generar la rutina. Verifica tu API key.' });
+    const userMsg = error.status === 401
+      ? 'API key de Anthropic inválida. Verifica la variable ANTHROPIC_API_KEY en Vercel.'
+      : `Error al generar la rutina: ${error.message}`;
+    res.status(500).json({ error: userMsg });
   }
 }
