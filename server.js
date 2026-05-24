@@ -20,104 +20,93 @@ function buildInjurySection(injuries) {
   if (!injuries || !injuries.trim()) {
     return `✅ SIN LESIONES: El usuario no reporta lesiones. Incluye cualquier ejercicio apropiado para su nivel.`;
   }
-
   const text = injuries.toLowerCase();
   const hasLumbar = text.includes('l4') || text.includes('l5') || text.includes('s1') ||
     text.includes('lumbar') || text.includes('hernia') || text.includes('disco') ||
     text.includes('espalda baja') || text.includes('lumbago');
-
-  const lumbarCoreNote = hasLumbar
-    ? `\n   ⚠️ CORE CON LESIÓN LUMBAR: Usa ÚNICAMENTE plancha en codos, dead bug, hollow hold, bird dog, respiración diafragmática. PROHIBIDO ABSOLUTO: crunches, sit-ups, elevaciones de piernas rectas, cualquier flexión lumbar bajo carga.`
+  const lumbarNote = hasLumbar
+    ? `\n   ⚠️ CORE CON LESIÓN LUMBAR: Usa ÚNICAMENTE plancha en codos, dead bug, hollow hold, bird dog. PROHIBIDO: crunches, sit-ups, elevaciones de piernas rectas.`
     : '';
-
-  return `⚠️ LESIONES/LIMITACIONES (CRÍTICO): El usuario reporta: "${injuries}".
-OBLIGATORIO: Adapta TODOS los ejercicios para no agravar estas condiciones. No asumas ni inventes lesiones adicionales.${lumbarCoreNote}`;
+  return `⚠️ LESIONES/LIMITACIONES (CRÍTICO): El usuario reporta: "${injuries}". Adapta TODOS los ejercicios. No asumas lesiones adicionales.${lumbarNote}`;
 }
 
 function buildWorkoutTypeSection(workoutType) {
   if (workoutType === 'calistenia') {
-    return `🏋️ TIPO DE ENTRENAMIENTO: Calistenia / peso corporal EXCLUSIVAMENTE.
-REGLA ABSOLUTA: USA SOLO ejercicios de peso corporal. Permitidos: dominadas, fondos en paralelas, lagartijas (pushups) en todas sus variantes, sentadillas con peso corporal, zancadas, pistol squat, muscle-up, planche progresions, L-sit, dips, australian rows, pike pushup, archer pushup, etc.
-PROHIBIDO: cualquier mancuerna, barra, máquina, cable o peso externo.`;
+    return `🏋️ TIPO: Calistenia EXCLUSIVAMENTE. SOLO peso corporal: dominadas, fondos, lagartijas, sentadillas, zancadas, pistol squat, etc. PROHIBIDO cualquier peso externo.`;
   }
-  if (workoutType === 'casa') {
-    return `🏋️ TIPO DE ENTRENAMIENTO: Casa con mancuernas.
-USA SOLO mancuernas y ejercicios de peso corporal. No incluyas máquinas, cables ni barras olímpicas.`;
-  }
-  if (workoutType === 'gimnasio') {
-    return `🏋️ TIPO DE ENTRENAMIENTO: Gimnasio completo con máquinas.
-Puedes usar máquinas, cables, poleas, barras, mancuernas y todo el equipamiento de gimnasio disponible.`;
-  }
-  return `🏋️ TIPO DE ENTRENAMIENTO: Mixto (gimnasio + calistenia). Combina ejercicios con equipamiento y de peso corporal.`;
+  if (workoutType === 'casa') return `🏋️ TIPO: Casa con mancuernas. Solo mancuernas y peso corporal.`;
+  if (workoutType === 'gimnasio') return `🏋️ TIPO: Gimnasio completo. Usa máquinas, cables, barras y mancuernas.`;
+  return `🏋️ TIPO: Mixto. Combina equipamiento de gimnasio y calistenia.`;
 }
 
 app.post('/api/generate-routine', async (req, res) => {
   const { profile, selectedDays } = req.body;
   const daysText = selectedDays.join(', ');
-
-  const injurySection = buildInjurySection(profile.injuries);
-  const workoutTypeSection = buildWorkoutTypeSection(profile.workoutType);
   const workoutTypeLabel = WORKOUT_TYPE_LABELS[profile.workoutType] || profile.workoutType;
 
-  const prompt = `Eres un entrenador personal certificado y experto en programación de entrenamiento. Genera una rutina semanal completa en español.
+  const prompt = `Eres un entrenador personal certificado. Genera una rutina semanal completa en español.
 
-${injurySection}
+${buildInjurySection(profile.injuries)}
 
-${workoutTypeSection}
+${buildWorkoutTypeSection(profile.workoutType)}
 
-**PERFIL DEL USUARIO:**
-- Nombre: ${profile.name}
-- Edad: ${profile.age} años | Peso: ${profile.weight} kg | Estatura: ${profile.height} cm
-- Nivel: ${profile.level}
+**PERFIL:**
+- Nombre: ${profile.name} | Edad: ${profile.age} | Peso: ${profile.weight} kg | Estatura: ${profile.height} cm
+- Nivel: ${profile.level} | Tiempo por sesión: ${profile.sessionTime}
 - Tipo de entrenamiento: ${workoutTypeLabel}
 - Objetivos: ${profile.goals}
-- Equipamiento disponible: ${profile.equipment}
-- Tiempo por sesión: ${profile.sessionTime}
+- Equipamiento: ${profile.equipment}
 
-**DÍAS DE ENTRENAMIENTO:** ${daysText}
+**DÍAS:** ${daysText}
 
-**ESTRUCTURA OBLIGATORIA PARA CADA DÍA:**
+**ESTRUCTURA POR DÍA:**
 
-## [Día] — [Grupo Muscular Principal]
+## [Día] — [Grupo Muscular]
 
 ### Calentamiento (5-10 min)
-- Ejercicio · [Ver video](https://www.youtube.com/results?search_query=nombre+del+ejercicio+warm+up) · Duración
+- Ejercicio · [Ver video](https://www.youtube.com/results?search_query=ejercicio+warm+up) · Duración
 
 ### Bloque principal
-Para cada ejercicio usa EXACTAMENTE este formato:
+**Nombre Ejercicio** · [Ver video](https://www.youtube.com/results?search_query=ejercicio+proper+form+beginners)
+- Series: X | Reps: X | Descanso: X seg
+- Técnica: nota clave
 
-**Nombre del Ejercicio** · [Ver video](https://www.youtube.com/results?search_query=nombre+del+ejercicio+proper+form+beginners)
-- Series: X | Reps/Tiempo: X | Descanso: X seg
-- Técnica: [nota clave de ejecución]
-
-### Core / Abdomen (OBLIGATORIO en CADA sesión)
-Incluye 2-3 ejercicios de core adaptados a las lesiones del usuario.
-${profile.injuries ? `Recuerda la restricción de lesiones al elegir ejercicios de core.` : 'Sin restricciones, varía los ejercicios de core entre sesiones.'}
+### Core / Abdomen (OBLIGATORIO cada sesión)
+2-3 ejercicios de core adaptados a lesiones.
 
 ### Vuelta a la calma (5 min)
-- Ejercicio · [Ver video](https://www.youtube.com/results?search_query=nombre+ejercicio+cool+down+stretch) · Duración
+- Ejercicio · [Ver video](https://www.youtube.com/results?search_query=ejercicio+cool+down) · Duración
 
 ---
 
-**REGLAS ABSOLUTAS:**
-1. GENERA plan completo para LOS ${selectedDays.length} DÍAS: ${daysText}. No termines antes del último día.
-2. Cada ejercicio lleva su [Ver video](...) — nombre real en la URL con + en lugar de espacios.
-3. La sección ### Core / Abdomen es OBLIGATORIA en cada uno de los ${selectedDays.length} días.
-4. ${profile.workoutType === 'calistenia' ? 'SOLO peso corporal. Cero pesos externos.' : `Usa ejercicios apropiados para "${workoutTypeLabel}".`}
-5. Adapta volumen e intensidad al nivel ${profile.level} y ${profile.sessionTime} por sesión.
-6. Al finalizar TODOS los días, agrega ## Recomendaciones generales (nutrición, sueño, recuperación).`;
+**REGLAS:**
+1. Plan completo para LOS ${selectedDays.length} DÍAS: ${daysText}. No termines antes.
+2. Cada ejercicio lleva [Ver video](...) con nombre real en la URL (+ en lugar de espacios).
+3. Core obligatorio en cada día.
+4. ${profile.workoutType === 'calistenia' ? 'SOLO peso corporal.' : `Ejercicios para "${workoutTypeLabel}".`}
+5. Al final: ## Recomendaciones generales.`;
 
   try {
-    const message = await anthropic.messages.create({
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('Transfer-Encoding', 'chunked');
+
+    const stream = anthropic.messages.stream({
       model: 'claude-sonnet-4-6',
       max_tokens: 8000,
       messages: [{ role: 'user', content: prompt }],
     });
 
-    res.json({ routine: message.content[0].text });
+    for await (const chunk of stream) {
+      if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
+        res.write(chunk.delta.text);
+      }
+    }
+    res.end();
   } catch (error) {
     console.error('Anthropic API error:', error.message);
-    res.status(500).json({ error: 'Error al generar la rutina. Verifica tu API key.' });
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Error al generar la rutina.' });
+    }
   }
 });
 

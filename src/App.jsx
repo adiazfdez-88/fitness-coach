@@ -83,17 +83,25 @@ export default function App() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          profile: {
-            ...profile,
-            equipment: profile.equipment.join(', '),
-          },
+          profile: { ...profile, equipment: profile.equipment.join(', ') },
           selectedDays,
         }),
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Error al generar la rutina');
-      setRoutine(data.routine);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `Error ${res.status}`);
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        setRoutine((prev) => (prev ?? '') + chunk);
+      }
     } catch (err) {
       setError(err.message);
     } finally {

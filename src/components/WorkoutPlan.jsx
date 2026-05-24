@@ -9,7 +9,7 @@ export default function WorkoutPlan({ routine }) {
     if (ref.current) {
       ref.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-  }, [routine]);
+  }, []); // solo al montar, no en cada chunk del stream
 
   const handleCopy = () => {
     navigator.clipboard.writeText(routine);
