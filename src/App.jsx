@@ -37,6 +37,7 @@ export default function App() {
 
   const [routine, setRoutine] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [loadingStatus, setLoadingStatus] = useState('');
   const [error, setError] = useState(null);
   const [showProfilePanel, setShowProfilePanel] = useState(false);
 
@@ -78,34 +79,58 @@ export default function App() {
     setError(null);
     setRoutine(null);
 
+    const results = Array(selectedDays.length).fill(null);
+    const flatProfile = { ...profile, equipment: profile.equipment.join(', ') };
+
+    const updateDisplay = (completed) => {
+      setLoadingStatus(`${completed} de ${selectedDays.length} días generados…`);
+      // Show days in sequence order, up to the first gap
+      let display = '';
+      for (let i = 0; i < results.length; i++) {
+        if (results[i] === null) break;
+        display += (display ? '\n\n---\n\n' : '') + results[i];
+      }
+      if (display) setRoutine(display);
+    };
+
     try {
-      const res = await fetch('/api/generate-routine', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          profile: { ...profile, equipment: profile.equipment.join(', ') },
-          selectedDays,
-        }),
-      });
+      setLoadingStatus(`Generando ${selectedDays.length} días en paralelo…`);
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || `Error ${res.status}`);
-      }
+      await Promise.all(
+        selectedDays.map(async (day, i) => {
+          const res = await fetch('/api/generate-routine', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              profile: flatProfile,
+              day,
+              dayIndex: i,
+              totalDays: selectedDays.length,
+              isLast: i === selectedDays.length - 1,
+            }),
+          });
 
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data.error || `Error ${res.status} en ${day}`);
+          }
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
-        setRoutine((prev) => (prev ?? '') + chunk);
-      }
+          const data = await res.json();
+          if (data.error) throw new Error(data.error);
+
+          results[i] = data.content;
+          const completed = results.filter((r) => r !== null).length;
+          updateDisplay(completed);
+        })
+      );
+
+      // Final display with all days in order
+      setRoutine(results.join('\n\n---\n\n'));
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
+      setLoadingStatus('');
     }
   };
 
@@ -182,7 +207,7 @@ export default function App() {
 
           {loading && (
             <p className="generating-text">
-              Diseñando tu rutina personalizada, esto puede tardar unos segundos…
+              {loadingStatus || 'Diseñando tu rutina personalizada…'}
             </p>
           )}
 
