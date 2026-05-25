@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useLocalStorage } from './hooks/useLocalStorage';
+import { generateDayRoutine } from './lib/anthropic';
 import WelcomeScreen from './components/WelcomeScreen';
 import ProfilePanel from './components/ProfilePanel';
-import UserProfile from './components/UserProfile';
 import WeeklyCalendar from './components/WeeklyCalendar';
 import WorkoutPlan from './components/WorkoutPlan';
 import './App.css';
@@ -23,7 +23,6 @@ const EMPTY_PROFILE = {
 
 export default function App() {
   const [rawProfile, setProfile] = useLocalStorage('fitcoach_profile', EMPTY_PROFILE);
-  // Normalize synchronously: migrate legacy format where goals was an array
   const profile = {
     ...EMPTY_PROFILE,
     ...rawProfile,
@@ -34,6 +33,7 @@ export default function App() {
   const [dayStatuses, setDayStatuses] = useLocalStorage('fitcoach_day_statuses', {});
   const [reschedules, setReschedules] = useLocalStorage('fitcoach_reschedules', {});
   const [onboarded, setOnboarded] = useLocalStorage('fitcoach_onboarded', false);
+  const [apiKey, setApiKey] = useLocalStorage('fitcoach_api_key', '');
 
   const [routine, setRoutine] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -53,7 +53,8 @@ export default function App() {
     profile.level &&
     profile.sessionTime &&
     profile.workoutType &&
-    selectedDays.length > 0;
+    selectedDays.length > 0 &&
+    apiKey.trim();
 
   const handleStart = () => setOnboarded(true);
 
@@ -84,7 +85,6 @@ export default function App() {
 
     const updateDisplay = (completed) => {
       setLoadingStatus(`${completed} de ${selectedDays.length} días generados…`);
-      // Show days in sequence order, up to the first gap
       let display = '';
       for (let i = 0; i < results.length; i++) {
         if (results[i] === null) break;
@@ -94,37 +94,18 @@ export default function App() {
     };
 
     try {
-      setLoadingStatus(`Generando ${selectedDays.length} días en paralelo…`);
+      setLoadingStatus(`Generando ${selectedDays.length} día${selectedDays.length > 1 ? 's' : ''}…`);
 
       await Promise.all(
         selectedDays.map(async (day, i) => {
-          const res = await fetch('/api/generate-routine', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              profile: flatProfile,
-              day,
-              dayIndex: i,
-              totalDays: selectedDays.length,
-              isLast: i === selectedDays.length - 1,
-            }),
-          });
-
-          if (!res.ok) {
-            const data = await res.json().catch(() => ({}));
-            throw new Error(data.error || `Error ${res.status} en ${day}`);
-          }
-
-          const data = await res.json();
-          if (data.error) throw new Error(data.error);
-
-          results[i] = data.content;
-          const completed = results.filter((r) => r !== null).length;
-          updateDisplay(completed);
+          const content = await generateDayRoutine(
+            apiKey, flatProfile, day, i, selectedDays.length, i === selectedDays.length - 1
+          );
+          results[i] = content;
+          updateDisplay(results.filter((r) => r !== null).length);
         })
       );
 
-      // Final display with all days in order
       setRoutine(results.join('\n\n---\n\n'));
     } catch (err) {
       setError(err.message);
@@ -140,6 +121,8 @@ export default function App() {
         profile={profile}
         onChange={setProfile}
         onStart={handleStart}
+        apiKey={apiKey}
+        onApiKeyChange={setApiKey}
       />
     );
   }
@@ -201,13 +184,15 @@ export default function App() {
             <p className="generating-text">
               {selectedDays.length === 0
                 ? 'Selecciona al menos un día de entrenamiento'
+                : !apiKey.trim()
+                ? 'Ingresa tu API Key en "Editar perfil" para continuar'
                 : 'Perfil incompleto — haz clic en "Editar perfil" para completarlo'}
             </p>
           )}
 
           {loading && (
             <p className="generating-text">
-              {loadingStatus || 'Diseñando tu rutina personalizada…'}
+              {loadingStatus || 'Generando tu rutina personalizada…'}
             </p>
           )}
 
@@ -234,6 +219,8 @@ export default function App() {
           profile={profile}
           onChange={setProfile}
           onClose={() => setShowProfilePanel(false)}
+          apiKey={apiKey}
+          onApiKeyChange={setApiKey}
         />
       )}
     </div>

@@ -1,14 +1,3 @@
-import express from 'express';
-import cors from 'cors';
-import Anthropic from '@anthropic-ai/sdk';
-import 'dotenv/config';
-
-const app = express();
-app.use(cors());
-app.use(express.json());
-
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
 const WORKOUT_TYPE_LABELS = {
   gimnasio:   'Gimnasio completo (máquinas, cables, barras, mancuernas)',
   calistenia: 'Calistenia (SOLO peso corporal)',
@@ -42,38 +31,44 @@ ${injuryNote}Perfil: ${profile.name}, ${profile.age}a, ${profile.weight}kg, ${pr
 ## ${day} — [Grupo muscular]
 
 ### Calentamiento (5 min)
-Escribe 3 ejercicios con formato:
+Escribe 3 ejercicios:
 - Nombre · [Ver video](https://www.youtube.com/results?search_query=nombre+warm+up) · duración
 
 ### Bloque principal
-Escribe 5 ejercicios con formato:
+Escribe 5 ejercicios:
 **Nombre** · [Ver video](https://www.youtube.com/results?search_query=nombre+proper+form)
 - Series: X | Reps: X | Descanso: Xs
 - Técnica: nota breve
 
 ### Core / Abdomen (obligatorio)
-Escribe 2 ejercicios con link de video. Respeta lesiones.
+2 ejercicios con link de video. Respeta lesiones.
 
 ### Vuelta a la calma (5 min)
-Escribe 2 ejercicios con link de video.${isLast ? '\n\n## Recomendaciones generales\nEscribe 3 puntos clave de nutrición, descanso y progresión.' : ''}`;
+2 ejercicios con link de video.${isLast ? '\n\n## Recomendaciones generales\n3 puntos clave de nutrición, descanso y progresión.' : ''}`;
 }
 
-app.post('/api/generate-routine', async (req, res) => {
-  const { profile, day, dayIndex, totalDays, isLast } = req.body;
-  const prompt = buildPrompt(profile, day, dayIndex, totalDays, isLast);
-
-  try {
-    const message = await anthropic.messages.create({
+export async function generateDayRoutine(apiKey, profile, day, dayIndex, totalDays, isLast) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
       model: 'claude-sonnet-4-6',
       max_tokens: 900,
-      messages: [{ role: 'user', content: prompt }],
-    });
-    res.json({ content: message.content[0].text });
-  } catch (error) {
-    console.error('Anthropic API error:', error.message);
-    res.status(500).json({ error: 'Error al generar la rutina.' });
-  }
-});
+      messages: [{ role: 'user', content: buildPrompt(profile, day, dayIndex, totalDays, isLast) }],
+    }),
+  });
 
-const PORT = 3001;
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    const msg = data.error?.message || `Error ${res.status}`;
+    throw new Error(msg);
+  }
+
+  const data = await res.json();
+  return data.content[0].text;
+}

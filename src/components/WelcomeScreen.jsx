@@ -6,8 +6,8 @@ const REQUIRED_FIELDS = (p) =>
   p.goals?.trim() && p.equipment?.length > 0 &&
   p.level && p.sessionTime && p.workoutType;
 
-export default function WelcomeScreen({ profile, onChange, onStart }) {
-  const ready = REQUIRED_FIELDS(profile);
+export default function WelcomeScreen({ profile, onChange, onStart, apiKey, onApiKeyChange }) {
+  const ready = REQUIRED_FIELDS(profile) && apiKey.trim();
 
   return (
     <div className="welcome">
@@ -23,6 +23,31 @@ export default function WelcomeScreen({ profile, onChange, onStart }) {
           <div className="wf-item"><span>🎬</span> Video de YouTube por ejercicio</div>
           <div className="wf-item"><span>📅</span> Calendario con seguimiento diario</div>
           <div className="wf-item"><span>💾</span> Perfil guardado automáticamente</div>
+        </div>
+
+        <div className="welcome-form-section">
+          <h2>API Key de Anthropic</h2>
+          <p className="welcome-form-sub">
+            Tu clave se guarda solo en este navegador (localStorage) y nunca sale de él.
+            Obtenla en{' '}
+            <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer">
+              console.anthropic.com
+            </a>.
+          </p>
+          <div className="profile-form">
+            <div className="form-group">
+              <label htmlFor="welcome-api-key">API Key</label>
+              <input
+                id="welcome-api-key"
+                type="password"
+                placeholder="sk-ant-..."
+                value={apiKey}
+                onChange={(e) => onApiKeyChange(e.target.value.trim())}
+                autoComplete="off"
+                spellCheck={false}
+              />
+            </div>
+          </div>
         </div>
 
         <div className="welcome-form-section">
@@ -43,7 +68,9 @@ export default function WelcomeScreen({ profile, onChange, onStart }) {
           </button>
           {!ready && (
             <p className="welcome-hint">
-              Completa nombre, medidas, nivel, tiempo por sesión, objetivos y equipamiento
+              {!apiKey.trim()
+                ? 'Ingresa tu API Key de Anthropic para comenzar'
+                : 'Completa nombre, medidas, nivel, tiempo por sesión, objetivos y equipamiento'}
             </p>
           )}
         </div>
