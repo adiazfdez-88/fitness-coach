@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useLocalStorage } from './hooks/useLocalStorage';
-import { generateDayRoutine } from './lib/anthropic';
 import WelcomeScreen from './components/WelcomeScreen';
 import ProfilePanel from './components/ProfilePanel';
 import WeeklyCalendar from './components/WeeklyCalendar';
@@ -21,6 +20,8 @@ const EMPTY_PROFILE = {
   workoutType: '',
 };
 
+const BATCH_SIZE = 2;
+
 export default function App() {
   const [rawProfile, setProfile] = useLocalStorage('fitcoach_profile', EMPTY_PROFILE);
   const profile = {
@@ -33,13 +34,21 @@ export default function App() {
   const [dayStatuses, setDayStatuses] = useLocalStorage('fitcoach_day_statuses', {});
   const [reschedules, setReschedules] = useLocalStorage('fitcoach_reschedules', {});
   const [onboarded, setOnboarded] = useLocalStorage('fitcoach_onboarded', false);
-  const [apiKey, setApiKey] = useLocalStorage('fitcoach_api_key', '');
 
-  const [routine, setRoutine] = useState(null);
+  const [batches, setBatches] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [loadingStatus, setLoadingStatus] = useState('');
   const [error, setError] = useState(null);
   const [showProfilePanel, setShowProfilePanel] = useState(false);
+
+  // Group selected days into batches of BATCH_SIZE
+  const dayBatches = [];
+  for (let i = 0; i < selectedDays.length; i += BATCH_SIZE) {
+    dayBatches.push(selectedDays.slice(i, i + BATCH_SIZE));
+  }
+  const totalBatches = dayBatches.length;
+  const allGenerated = batches.length >= totalBatches;
+  const routine = batches.length > 0 ? batches.join('\n\n---\n\n') : null;
+  const nextBatchDays = !allGenerated ? dayBatches[batches.length] : null;
 
   const isFirstVisit = !onboarded;
 
@@ -53,8 +62,7 @@ export default function App() {
     profile.level &&
     profile.sessionTime &&
     profile.workoutType &&
-    selectedDays.length > 0 &&
-    apiKey.trim();
+    selectedDays.length > 0;
 
   const handleStart = () => setOnboarded(true);
 
@@ -75,45 +83,45 @@ export default function App() {
     setReschedules({});
   };
 
-  const generateRoutine = async () => {
+  const generateBatch = async (batchIdx) => {
+    const days = dayBatches[batchIdx];
+    const isLastBatch = batchIdx === totalBatches - 1;
     setLoading(true);
     setError(null);
-    setRoutine(null);
-
-    const results = Array(selectedDays.length).fill(null);
-    const flatProfile = { ...profile, equipment: profile.equipment.join(', ') };
-
-    const updateDisplay = (completed) => {
-      setLoadingStatus(`${completed} de ${selectedDays.length} días generados…`);
-      let display = '';
-      for (let i = 0; i < results.length; i++) {
-        if (results[i] === null) break;
-        display += (display ? '\n\n---\n\n' : '') + results[i];
-      }
-      if (display) setRoutine(display);
-    };
 
     try {
-      setLoadingStatus(`Generando ${selectedDays.length} día${selectedDays.length > 1 ? 's' : ''}…`);
+      const res = await fetch('/api/generate-routine', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          profile: { ...profile, equipment: profile.equipment.join(', ') },
+          days,
+          isLastBatch,
+        }),
+      });
 
-      await Promise.all(
-        selectedDays.map(async (day, i) => {
-          const content = await generateDayRoutine(
-            apiKey, flatProfile, day, i, selectedDays.length, i === selectedDays.length - 1
-          );
-          results[i] = content;
-          updateDisplay(results.filter((r) => r !== null).length);
-        })
-      );
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `Error ${res.status}`);
+      }
 
-      setRoutine(results.join('\n\n---\n\n'));
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      setBatches((prev) => [...prev, data.content]);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
-      setLoadingStatus('');
     }
   };
+
+  const generateRoutine = () => {
+    setBatches([]);
+    // Use setTimeout(0) so batches resets before generateBatch reads dayBatches[0]
+    setTimeout(() => generateBatch(0), 0);
+  };
+
+  const generateNextBatch = () => generateBatch(batches.length);
 
   if (isFirstVisit) {
     return (
@@ -121,8 +129,6 @@ export default function App() {
         profile={profile}
         onChange={setProfile}
         onStart={handleStart}
-        apiKey={apiKey}
-        onApiKeyChange={setApiKey}
       />
     );
   }
@@ -170,7 +176,7 @@ export default function App() {
             onClick={generateRoutine}
             disabled={!canGenerate || loading}
           >
-            {loading ? (
+            {loading && batches.length === 0 ? (
               <>
                 <span className="generating-spinner">⚙️</span>
                 Generando rutina...
@@ -184,15 +190,13 @@ export default function App() {
             <p className="generating-text">
               {selectedDays.length === 0
                 ? 'Selecciona al menos un día de entrenamiento'
-                : !apiKey.trim()
-                ? 'Ingresa tu API Key en "Editar perfil" para continuar'
                 : 'Perfil incompleto — haz clic en "Editar perfil" para completarlo'}
             </p>
           )}
 
-          {loading && (
+          {loading && batches.length === 0 && (
             <p className="generating-text">
-              {loadingStatus || 'Generando tu rutina personalizada…'}
+              Generando {dayBatches[0]?.join(' y ')}… esto tarda unos segundos.
             </p>
           )}
 
@@ -200,13 +204,44 @@ export default function App() {
         </div>
 
         {routine && (
-          <section className="section-card">
-            <h2 className="section-title">
-              <span className="icon">🏋️</span>
-              Tu Rutina Semanal
-            </h2>
-            <WorkoutPlan routine={routine} />
-          </section>
+          <>
+            <section className="section-card">
+              <h2 className="section-title">
+                <span className="icon">🏋️</span>
+                Tu Rutina Semanal
+                {!allGenerated && (
+                  <span className="section-badge">
+                    {batches.length}/{totalBatches} bloques
+                  </span>
+                )}
+              </h2>
+              <WorkoutPlan routine={routine} />
+            </section>
+
+            {!allGenerated && (
+              <div className="generate-section">
+                <button
+                  className="btn-generate"
+                  onClick={generateNextBatch}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <span className="generating-spinner">⚙️</span>
+                      Generando {nextBatchDays?.join(' y ')}...
+                    </>
+                  ) : (
+                    `📅 Generar ${nextBatchDays?.join(' y ')} →`
+                  )}
+                </button>
+                {loading && (
+                  <p className="generating-text">
+                    Generando {nextBatchDays?.join(' y ')}… esto tarda unos segundos.
+                  </p>
+                )}
+              </div>
+            )}
+          </>
         )}
       </main>
 
@@ -219,8 +254,6 @@ export default function App() {
           profile={profile}
           onChange={setProfile}
           onClose={() => setShowProfilePanel(false)}
-          apiKey={apiKey}
-          onApiKeyChange={setApiKey}
         />
       )}
     </div>
