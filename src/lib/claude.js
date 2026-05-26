@@ -1,5 +1,3 @@
-import Anthropic from '@anthropic-ai/sdk';
-
 const WORKOUT_TYPE_LABELS = {
   gimnasio:   'Gimnasio completo (máquinas, cables, barras, mancuernas)',
   calistenia: 'Calistenia (SOLO peso corporal)',
@@ -103,24 +101,36 @@ Reglas:
 
 export async function generateDayPlan({ profile, day, allDays, assignedGroup, usedExercises, isLastDay, lastWeekSummary }) {
   const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error('VITE_ANTHROPIC_API_KEY no configurada.');
+  if (!apiKey) throw new Error('VITE_ANTHROPIC_API_KEY no configurada en Vercel.');
 
-  const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
+  const prompt = buildPrompt(
+    { ...profile, equipment: Array.isArray(profile.equipment) ? profile.equipment.join(', ') : profile.equipment },
+    day, allDays, assignedGroup, usedExercises, isLastDay, lastWeekSummary
+  );
 
-  const message = await client.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 2500,
-    temperature: 0.3,
-    messages: [{
-      role: 'user',
-      content: buildPrompt(
-        { ...profile, equipment: Array.isArray(profile.equipment) ? profile.equipment.join(', ') : profile.equipment },
-        day, allDays, assignedGroup, usedExercises, isLastDay, lastWeekSummary
-      ),
-    }],
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 2500,
+      temperature: 0.3,
+      messages: [{ role: 'user', content: prompt }],
+    }),
   });
 
-  const plan = extractJSON(message.content[0].text);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error?.message || `Error ${res.status} de la API`);
+  }
+
+  const data = await res.json();
+  const plan = extractJSON(data.content[0].text);
   if (!plan) throw new Error('La IA no devolvió un formato válido. Inténtalo de nuevo.');
   return plan;
 }
