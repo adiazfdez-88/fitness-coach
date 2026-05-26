@@ -106,7 +106,9 @@ export default function App() {
           level: profileData.level || '',
           daysPerWeek: profileData.days_per_week?.toString() || '',
           sessionTime: profileData.session_time || '',
-          workoutTypes: profileData.workout_types || [],
+          workoutTypes: profileData.workout_types?.length
+            ? profileData.workout_types
+            : profileData.workout_type ? [profileData.workout_type] : [],
         });
         if (profileData.training_days?.length) setSelectedDays(profileData.training_days);
         if (profileData.name) setOnboarded(true);
