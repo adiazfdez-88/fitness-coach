@@ -180,8 +180,7 @@ export default function App() {
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(async () => {
       setSyncing(true);
-      const { error: saveError } = await supabase.from('profile').upsert({
-        user_id: user.id,
+      const profileData = {
         name: rawProfile.name,
         age: rawProfile.age ? Number(rawProfile.age) : null,
         weight: rawProfile.weight ? Number(rawProfile.weight) : null,
@@ -195,7 +194,13 @@ export default function App() {
         workout_types: rawProfile.workoutTypes || [],
         training_days: selectedDays,
         updated_at: new Date().toISOString(),
-      }, { onConflict: 'user_id' });
+      };
+      // Verificar si ya existe registro para este usuario
+      const { data: existing } = await supabase
+        .from('profile').select('user_id').eq('user_id', user.id).maybeSingle();
+      const { error: saveError } = existing
+        ? await supabase.from('profile').update(profileData).eq('user_id', user.id)
+        : await supabase.from('profile').insert({ user_id: user.id, ...profileData });
       if (saveError) {
         console.error('Error guardando perfil:', saveError.message);
         setError('No se pudo guardar el perfil: ' + saveError.message);
