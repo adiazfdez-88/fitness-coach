@@ -359,7 +359,10 @@ export default function App() {
           </button>
           <button
             className="btn-logout"
-            onClick={() => supabase.auth.signOut({ scope: 'local' })}
+            onClick={async () => {
+              await supabase.auth.signOut();
+              window.location.href = '/';
+            }}
           >
             Salir
           </button>
