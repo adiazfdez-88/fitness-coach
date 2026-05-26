@@ -15,6 +15,7 @@ const LOCATION_ICONS = {
   calistenia: '💪',
   casa:       '🏠',
   mixto:      '⚡',
+  cardio:     '🏃',
 };
 
 const LOCATION_LABELS = {
@@ -22,6 +23,7 @@ const LOCATION_LABELS = {
   calistenia: 'Calistenia',
   casa:       'Casa',
   mixto:      'Mixto',
+  cardio:     'Cardio / Running',
 };
 
 export default function WeeklyCalendar({

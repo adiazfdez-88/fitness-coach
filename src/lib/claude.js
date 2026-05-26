@@ -3,6 +3,7 @@ const WORKOUT_TYPE_LABELS = {
   calistenia: 'Calistenia (SOLO peso corporal)',
   casa:       'Casa con mancuernas (mancuernas + peso corporal)',
   mixto:      'Mixto (gimnasio + calistenia)',
+  cardio:     'Cardio / Running (carrera, intervalos, HIIT cardio — sin pesas)',
 };
 
 function buildInjuryNote(injuries) {
@@ -31,16 +32,19 @@ function extractJSON(text) {
 
 function buildPrompt(profile, day, allDays, assignedGroup, usedExercises, isLastDay, lastWeekSummary) {
   const types = Array.isArray(profile.workoutTypes) ? profile.workoutTypes : [profile.workoutType].filter(Boolean);
+  const isCardioDay = types.length === 1 && types[0] === 'cardio';
   const onlyCalistenia = types.length === 1 && types[0] === 'calistenia';
-  const typeRule = onlyCalistenia
-    ? 'SOLO peso corporal, sin equipamiento externo.'
-    : `Equipamiento/entornos: ${types.map(t => WORKOUT_TYPE_LABELS[t] || t).join(' + ')}.`;
+  const typeRule = isCardioDay
+    ? 'DÍA DE CARDIO / RUNNING. Genera un plan de carrera o cardio, NO de fuerza.'
+    : onlyCalistenia
+      ? 'SOLO peso corporal, sin equipamiento externo.'
+      : `Equipamiento/entornos: ${types.map(t => WORKOUT_TYPE_LABELS[t] || t).join(' + ')}.`;
   const injuryNote = buildInjuryNote(profile.injuries);
 
   const lastWeekSection = lastWeekSummary
     ? `SEMANA ANTERIOR (para continuidad y progresión):\n${lastWeekSummary}\n\n`
     : '';
-  const groupSection = assignedGroup
+  const groupSection = !isCardioDay && assignedGroup
     ? `GRUPO MUSCULAR PARA HOY: ${assignedGroup}\nEl campo "muscleGroup" debe reflejar exactamente este grupo.\n\n`
     : '';
   const avoidSection = usedExercises?.length
@@ -50,14 +54,48 @@ function buildPrompt(profile, day, allDays, assignedGroup, usedExercises, isLast
     ? `SEMANA (${allDays.length} días: ${allDays.join(', ')})\n\n`
     : '';
 
-  return `Eres un entrenador personal experto. Genera la rutina de ${day} en español.
+  const cardioStructure = `{
+  "day": "${day}",
+  "muscleGroup": "Cardio / Running",
+  "weekTip": ${isLastDay ? '"3 recomendaciones breves: una de nutrición para corredores, una de descanso/recuperación, una de progresión en running."' : 'null'},
+  "warmup": [
+    {"name": "nombre del ejercicio de calentamiento", "duration": "X min", "why": "razón en 1 línea"}
+  ],
+  "main": [
+    {
+      "name": "nombre del bloque (ej: Carrera continua, Intervalos 400m, HIIT)",
+      "sets": "X series o bloques",
+      "reps": "X min / X km / X repeticiones",
+      "rest": "Xs o X min",
+      "technique": "ritmo, frecuencia cardíaca o consejo clave de forma",
+      "why": "razón en 1 línea",
+      "isKey": true
+    }
+  ],
+  "core": [
+    {
+      "name": "ejercicio de core para runners",
+      "sets": "X",
+      "reps": "X o Xs",
+      "rest": "Xs",
+      "technique": "consejo técnico",
+      "why": "por qué ayuda al running",
+      "isKey": false
+    }
+  ],
+  "cooldown": [
+    {"name": "estiramiento post-carrera", "duration": "X seg por lado", "why": "razón en 1 línea"}
+  ]
+}
 
-${weekSection}${groupSection}${avoidSection}${lastWeekSection}${injuryNote}Perfil: ${profile.name}, ${profile.age}a, ${profile.weight}kg, ${profile.height}cm | Nivel: ${profile.level} | Sesión: ${profile.sessionTime} | Objetivos: ${profile.goals} | ${typeRule}
+Reglas cardio:
+- warmup: 2 elementos de movilidad dinámica para runners
+- main: 3 a 4 bloques de entrenamiento de cardio (carrera continua, intervalos, fartlek, HIIT, etc.) adaptados al nivel ${profile.level}
+- core: 2 ejercicios que beneficien específicamente a runners (cadera, glúteos, estabilidad)
+- cooldown: 2 estiramientos para piernas/caderas post-carrera
+- Usa distancias y tiempos reales, no pesos`;
 
-Responde ÚNICAMENTE con un objeto JSON válido. Sin texto antes ni después. Sin bloques markdown. Solo el JSON puro.
-
-Estructura exacta:
-{
+  const strengthStructure = `{
   "day": "${day}",
   "muscleGroup": "nombre del grupo muscular",
   "weekTip": ${isLastDay ? '"3 recomendaciones breves separadas por puntos: una de nutrición, una de descanso, una de progresión."' : 'null'},
@@ -96,7 +134,16 @@ Reglas:
 - main: 4 a 5 elementos, marca isKey:true en 1 o 2 ejercicios clave del día
 - core: exactamente 2 elementos${injuryNote ? ' (obligatoriamente adaptados a las lesiones indicadas)' : ''}
 - cooldown: exactamente 2 elementos
-- Nivel de dificultad: ${profile.level}
+- Nivel de dificultad: ${profile.level}`;
+
+  return `Eres un entrenador personal experto. Genera la rutina de ${day} en español.
+
+${weekSection}${groupSection}${avoidSection}${lastWeekSection}${injuryNote}Perfil: ${profile.name}, ${profile.age}a, ${profile.weight}kg, ${profile.height}cm | Nivel: ${profile.level} | Sesión: ${profile.sessionTime} | Objetivos: ${profile.goals} | ${typeRule}
+
+Responde ÚNICAMENTE con un objeto JSON válido. Sin texto antes ni después. Sin bloques markdown. Solo el JSON puro.
+
+Estructura exacta:
+${isCardioDay ? cardioStructure : strengthStructure}
 - NO incluyas URLs en el JSON`;
 }
 

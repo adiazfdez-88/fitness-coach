@@ -27,6 +27,7 @@ const WORKOUT_TYPES = [
   { id: 'calistenia', label: '💪 Calistenia / peso corporal' },
   { id: 'casa', label: '🏠 Casa con mancuernas' },
   { id: 'mixto', label: '⚡ Mixto (gimnasio + calistenia)' },
+  { id: 'cardio', label: '🏃 Cardio / Running' },
 ];
 
 const PRIMARY_GOALS = [
