@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from './lib/supabase';
+import { generateDayPlan } from './lib/claude';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import WelcomeScreen from './components/WelcomeScreen';
 import ProfilePanel from './components/ProfilePanel';
@@ -218,28 +219,8 @@ export default function App() {
     }).join('\n');
   };
 
-  const callAPI = async (day, assignedGroup, usedExercises, isLastDay, lastWeekSummary) => {
-    const res = await fetch('/api/generate-routine', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        profile: { ...profile, equipment: profile.equipment.join(', ') },
-        day,
-        allDays: selectedDays,
-        assignedGroup,
-        usedExercises,
-        isLastDay,
-        lastWeekSummary,
-      }),
-    });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      throw new Error(data.error || `Error ${res.status}`);
-    }
-    const data = await res.json();
-    if (data.error) throw new Error(data.error);
-    return data.content;
-  };
+  const callAPI = (day, assignedGroup, usedExercises, isLastDay, lastWeekSummary) =>
+    generateDayPlan({ profile, day, allDays: selectedDays, assignedGroup, usedExercises, isLastDay, lastWeekSummary });
 
   const generateAll = async () => {
     setWeekPlans({});
