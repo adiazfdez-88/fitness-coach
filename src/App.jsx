@@ -140,28 +140,24 @@ export default function App() {
   }
 
   useEffect(() => {
-    async function init() {
-      try {
-        const { data: { session } } = await Promise.race([
-          supabase.auth.getSession(),
-          new Promise(resolve => setTimeout(() => resolve({ data: { session: null } }), 4000)),
-        ]);
-        const currentUser = session?.user ?? null;
-        setUser(currentUser);
-        if (currentUser) await loadUserData(currentUser);
-      } catch {
-        // Supabase unavailable
-      } finally {
-        setInitializing(false);
-      }
-    }
-    init();
+    // Timeout de seguridad: si Supabase no responde en 5s, mostramos la app igual
+    const fallback = setTimeout(() => setInitializing(false), 5000);
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
-      if (event === 'SIGNED_IN') {
-        await loadUserData(currentUser);
+
+      if (event === 'INITIAL_SESSION') {
+        // Dispara al arrancar — lee sesión del caché local, no hace llamada de red
+        try {
+          if (currentUser) await loadUserData(currentUser);
+        } finally {
+          clearTimeout(fallback);
+          setInitializing(false);
+        }
+      } else if (event === 'SIGNED_IN') {
+        // Login nuevo (form o Google OAuth)
+        if (currentUser) await loadUserData(currentUser);
       } else if (event === 'SIGNED_OUT') {
         setWeekPlans({});
         setProfile(EMPTY_PROFILE);
@@ -169,9 +165,13 @@ export default function App() {
         setOnboarded(false);
         isInit.current = true;
       }
+      // TOKEN_REFRESHED / USER_UPDATED: solo actualiza el user state
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(fallback);
+      subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
@@ -353,7 +353,7 @@ export default function App() {
           </button>
           <button
             className="btn-logout"
-            onClick={() => supabase.auth.signOut()}
+            onClick={() => supabase.auth.signOut({ scope: 'local' })}
           >
             Salir
           </button>
