@@ -7,29 +7,28 @@ function LandingPage({ onStart }) {
   return (
     <div className="landing">
 
-      {/* Hero: imagen de fondo con todo encima */}
-      <div className="landing-hero" style={{ backgroundImage: `url(${heroImg})` }}>
-        <div className="landing-hero-overlay" />
-
-        {/* Header encima de la foto */}
-        <div className="landing-header">
-          <div className="landing-logo-icon">
-            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="24" cy="10" r="5" fill="currentColor"/>
-              <path d="M14 22c0-5.5 4.5-10 10-10s10 4.5 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
-              <path d="M24 22v14M17 28l-5 6M31 28l5 6" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
-              <path d="M8 20h6M34 20h6" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
-            </svg>
-          </div>
-          <h1 className="landing-title">
-            <span className="landing-title-dark">FitCoach</span> <span className="landing-title-green">AI</span>
-          </h1>
-          <div className="landing-tagline-row">
-            <span className="landing-line" />
-            <span className="landing-tagline">Fuerza para toda la vida</span>
-            <span className="landing-line" />
-          </div>
+      {/* Título arriba sobre fondo crema */}
+      <div className="landing-header">
+        <div className="landing-logo-icon">
+          <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="24" cy="10" r="5" fill="currentColor"/>
+            <path d="M14 22c0-5.5 4.5-10 10-10s10 4.5 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
+            <path d="M24 22v14M17 28l-5 6M31 28l5 6" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
+            <path d="M8 20h6M34 20h6" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
+          </svg>
         </div>
+        <h1 className="landing-title">
+          <span className="landing-title-dark">FitCoach</span> <span className="landing-title-green">AI</span>
+        </h1>
+        <div className="landing-tagline-row">
+          <span className="landing-line" />
+          <span className="landing-tagline">Fuerza para toda la vida</span>
+          <span className="landing-line" />
+        </div>
+      </div>
+
+      {/* Hero: foto con badges flotantes */}
+      <div className="landing-hero" style={{ backgroundImage: `url(${heroImg})` }}>
 
         {/* Badge top right */}
         <div className="landing-badge landing-badge--tr">

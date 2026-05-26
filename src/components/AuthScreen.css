@@ -18,7 +18,7 @@
   max-height: 520px;
   background-size: cover;
   background-position: center top;
-  background-color: #3d5c1e;
+  background-color: #f2ede3;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -30,9 +30,9 @@
   inset: 0;
   background: linear-gradient(
     180deg,
-    rgba(20, 40, 5, 0.45) 0%,
-    rgba(20, 40, 5, 0.1) 40%,
-    rgba(20, 40, 5, 0.5) 100%
+    rgba(242, 237, 227, 0.15) 0%,
+    transparent 30%,
+    rgba(242, 237, 227, 0.25) 100%
   );
 }
 
@@ -50,8 +50,7 @@
 .landing-logo-icon {
   width: 44px;
   height: 44px;
-  color: #fff;
-  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4));
+  color: #3d5c1e;
   margin-bottom: 0.1rem;
 }
 
@@ -61,11 +60,10 @@
   letter-spacing: -0.02em;
   line-height: 1;
   margin: 0;
-  text-shadow: 0 2px 12px rgba(0,0,0,0.5);
 }
 
-.landing-title-dark  { color: #fff; }
-.landing-title-green { color: #a8d870; }
+.landing-title-dark  { color: #1a2e0a; }
+.landing-title-green { color: #4e7526; }
 
 .landing-tagline-row {
   display: flex;
@@ -77,15 +75,14 @@
 .landing-line {
   height: 1px;
   width: 32px;
-  background: rgba(255,255,255,0.6);
+  background: rgba(61, 92, 30, 0.35);
 }
 
 .landing-tagline {
   font-size: 0.82rem;
-  color: rgba(255,255,255,0.9);
+  color: #5a6e3a;
   font-weight: 500;
   white-space: nowrap;
-  text-shadow: 0 1px 4px rgba(0,0,0,0.4);
 }
 
 /* Floating badges */
@@ -104,7 +101,7 @@
 }
 
 .landing-badge--tr {
-  top: 110px;
+  top: 18px;
   right: 16px;
   animation-delay: 0s;
 }
