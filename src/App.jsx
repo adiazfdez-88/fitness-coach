@@ -219,10 +219,15 @@ export default function App() {
     profile.workoutTypes?.length > 0 &&
     selectedDays.length > 0;
 
-  const generatedDays = selectedDays.filter(d => weekPlans[d]);
-  const plans = generatedDays.map(d => weekPlans[d]).filter(Boolean);
+  const DAY_ORDER = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+  const sortDays = (days) => [...days].sort((a, b) => DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b));
+  const sortedSelectedDays = sortDays(selectedDays);
+  const generatedDays = sortedSelectedDays.filter(d => weekPlans[d]);
+  const plans = generatedDays.map(d => ({ ...weekPlans[d], day: d })).filter(Boolean);
 
   const handleStart = () => setOnboarded(true);
+
+  const handleDaysChange = (days) => setSelectedDays(sortDays(days));
 
   const handleMarkStatus = (dayId, status) => {
     setDayStatuses((prev) => {
@@ -281,11 +286,12 @@ export default function App() {
     try {
       const lastWeekSummary = await getLastWeekSummary();
       const weekStart = getWeekStart();
-      const weeklySplit = getWeeklySplit(selectedDays);
+      const daysInOrder = sortDays(selectedDays);
+      const weeklySplit = getWeeklySplit(daysInOrder);
 
       const results = await Promise.all(
-        selectedDays.map((day, i) =>
-          callAPI(day, weeklySplit[day], [], i === selectedDays.length - 1, lastWeekSummary)
+        daysInOrder.map((day, i) =>
+          callAPI(day, weeklySplit[day], [], i === daysInOrder.length - 1, lastWeekSummary)
             .then(content => ({ day, content }))
         )
       );
@@ -380,8 +386,8 @@ export default function App() {
             Días de entrenamiento
           </h2>
           <WeeklyCalendar
-            selectedDays={selectedDays}
-            onChange={setSelectedDays}
+            selectedDays={sortedSelectedDays}
+            onChange={handleDaysChange}
             onNewWeek={handleNewWeek}
             workoutTypes={profile.workoutTypes}
             dayLocations={dayLocations}
