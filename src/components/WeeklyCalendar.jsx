@@ -16,6 +16,20 @@ const STATUS_LABEL = {
   missed:    { label: 'Fallado',    cls: 'status--missed',    icon: '❌' },
 };
 
+const LOCATION_ICONS = {
+  gimnasio:  '🏋️',
+  calistenia:'💪',
+  casa:      '🏠',
+  mixto:     '⚡',
+};
+
+const LOCATION_LABELS = {
+  gimnasio:  'Gimnasio',
+  calistenia:'Calistenia',
+  casa:      'Casa',
+  mixto:     'Mixto',
+};
+
 export default function WeeklyCalendar({
   selectedDays,
   onChange,
@@ -24,6 +38,9 @@ export default function WeeklyCalendar({
   onMarkStatus,
   onReschedule,
   onNewWeek,
+  workoutTypes = [],
+  dayLocations = {},
+  onLocationChange,
 }) {
   const [rescheduleOpen, setRescheduleOpen] = useState(null); // dayId being rescheduled
 
@@ -112,6 +129,25 @@ export default function WeeklyCalendar({
                 )}
                 {isRescheduleTo && <span className="day-reschedule-badge">↩</span>}
               </button>
+
+              {/* Location selector (only if profile has multiple workout types) */}
+              {isSelected && workoutTypes.length > 1 && (
+                <div className="day-location">
+                  {workoutTypes.map(type => {
+                    const active = (dayLocations[day.id] || workoutTypes[0]) === type;
+                    return (
+                      <button
+                        key={type}
+                        className={`loc-btn ${active ? 'loc-btn--active' : ''}`}
+                        onClick={(e) => { e.stopPropagation(); onLocationChange({ ...dayLocations, [day.id]: type }); }}
+                        title={LOCATION_LABELS[type] || type}
+                      >
+                        {LOCATION_ICONS[type] || type}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
 
               {/* Status controls for selected days */}
               {isSelected && (

@@ -72,6 +72,7 @@ export default function App() {
   const [selectedDays, setSelectedDays] = useLocalStorage('fitcoach_days', []);
   const [dayStatuses, setDayStatuses] = useLocalStorage('fitcoach_day_statuses', {});
   const [reschedules, setReschedules] = useLocalStorage('fitcoach_reschedules', {});
+  const [dayLocations, setDayLocations] = useLocalStorage('fitcoach_day_locations', {});
   const [onboarded, setOnboarded] = useLocalStorage('fitcoach_onboarded', false);
 
   const [weekPlans, setWeekPlans] = useState({});
@@ -260,8 +261,13 @@ export default function App() {
     }).join('\n');
   };
 
-  const callAPI = (day, assignedGroup, usedExercises, isLastDay, lastWeekSummary) =>
-    generateDayPlan({ profile, day, allDays: selectedDays, assignedGroup, usedExercises, isLastDay, lastWeekSummary });
+  const callAPI = (day, assignedGroup, usedExercises, isLastDay, lastWeekSummary) => {
+    const dayType = dayLocations[day] || profile.workoutTypes?.[0];
+    const dayProfile = dayType
+      ? { ...profile, workoutTypes: [dayType] }
+      : profile;
+    return generateDayPlan({ profile: dayProfile, day, allDays: selectedDays, assignedGroup, usedExercises, isLastDay, lastWeekSummary });
+  };
 
   const generateAll = async () => {
     setWeekPlans({});
@@ -374,6 +380,9 @@ export default function App() {
             onMarkStatus={handleMarkStatus}
             onReschedule={setReschedules}
             onNewWeek={handleNewWeek}
+            workoutTypes={profile.workoutTypes}
+            dayLocations={dayLocations}
+            onLocationChange={setDayLocations}
           />
         </section>
 

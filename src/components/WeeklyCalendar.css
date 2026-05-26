@@ -205,6 +205,37 @@
   text-align: center;
 }
 
+/* Location selector */
+.day-location {
+  display: flex;
+  gap: 3px;
+  justify-content: center;
+  width: 100%;
+}
+
+.loc-btn {
+  flex: 1;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 0.85rem;
+  padding: 3px 2px;
+  cursor: pointer;
+  line-height: 1;
+  transition: all 0.15s;
+  opacity: 0.55;
+}
+
+.loc-btn--active {
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  border-color: var(--accent);
+  opacity: 1;
+}
+
+.loc-btn:hover {
+  opacity: 1;
+}
+
 /* Calendar footer */
 .calendar-footer {
   display: flex;
