@@ -180,7 +180,7 @@ export default function App() {
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(async () => {
       setSyncing(true);
-      await supabase.from('profile').upsert({
+      const { error: saveError } = await supabase.from('profile').upsert({
         user_id: user.id,
         name: rawProfile.name,
         age: rawProfile.age ? Number(rawProfile.age) : null,
@@ -196,6 +196,10 @@ export default function App() {
         training_days: selectedDays,
         updated_at: new Date().toISOString(),
       }, { onConflict: 'user_id' });
+      if (saveError) {
+        console.error('Error guardando perfil:', saveError.message);
+        setError('No se pudo guardar el perfil: ' + saveError.message);
+      }
       setSyncing(false);
     }, 1500);
     return () => clearTimeout(saveTimer.current);
