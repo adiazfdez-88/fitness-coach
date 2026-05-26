@@ -125,8 +125,16 @@ function DayPlan({ plan }) {
   );
 }
 
+const TODAY_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+
+function getTodayIdx(plans) {
+  const today = TODAY_NAMES[new Date().getDay()];
+  const idx = plans.findIndex(p => p.day === today);
+  return idx !== -1 ? idx : 0;
+}
+
 export default function WorkoutPlan({ plans }) {
-  const [activeIdx, setActiveIdx] = useState(0);
+  const [activeIdx, setActiveIdx] = useState(() => getTodayIdx(plans));
   const ref = useRef(null);
 
   useEffect(() => {
@@ -136,7 +144,7 @@ export default function WorkoutPlan({ plans }) {
   }, []);
 
   useEffect(() => {
-    setActiveIdx(plans.length - 1);
+    setActiveIdx(getTodayIdx(plans));
   }, [plans.length]);
 
   if (!plans?.length) return null;
