@@ -133,7 +133,9 @@ function getTodayIdx(plans) {
   return idx !== -1 ? idx : 0;
 }
 
-export default function WorkoutPlan({ plans }) {
+const LOCATION_ICONS = { gimnasio: '🏋️', calistenia: '💪', casa: '🏠', mixto: '⚡' };
+
+export default function WorkoutPlan({ plans, dayLocations = {}, workoutTypes = [] }) {
   const [activeIdx, setActiveIdx] = useState(() => getTodayIdx(plans));
   const ref = useRef(null);
 
@@ -155,20 +157,24 @@ export default function WorkoutPlan({ plans }) {
     <div className="workout-plan" ref={ref}>
       {plans.length > 1 && (
         <div className="day-tabs">
-          {plans.map((plan, i) => (
-            <button
-              key={i}
-              className={`day-tab${i === activeIdx ? ' day-tab--active' : ''}`}
-              onClick={() => setActiveIdx(i)}
-            >
-              <span className="day-tab-name">{plan.day}</span>
-              {plan.muscleGroup && (
-                <span className="day-tab-group">
-                  {plan.muscleGroup.split('—')[0].trim()}
-                </span>
-              )}
-            </button>
-          ))}
+          {plans.map((plan, i) => {
+            const loc = dayLocations[plan.day] || workoutTypes[0];
+            const locIcon = LOCATION_ICONS[loc] || '';
+            return (
+              <button
+                key={i}
+                className={`day-tab${i === activeIdx ? ' day-tab--active' : ''}`}
+                onClick={() => setActiveIdx(i)}
+              >
+                <span className="day-tab-name">{plan.day} {locIcon}</span>
+                {plan.muscleGroup && (
+                  <span className="day-tab-group">
+                    {plan.muscleGroup.split('—')[0].trim()}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       )}
       <DayPlan plan={activePlan} />

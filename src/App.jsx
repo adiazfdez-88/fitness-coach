@@ -16,6 +16,9 @@ const EMPTY_PROFILE = {
   height: '',
   injuries: '',
   goals: '',
+  primaryGoal: '',
+  focusAreas: [],
+  goalDetails: '',
   equipment: [],
   level: '',
   daysPerWeek: '',
@@ -103,6 +106,9 @@ export default function App() {
           height: profileData.height?.toString() || '',
           injuries: profileData.injuries || '',
           goals: profileData.goals || '',
+          primaryGoal: profileData.primary_goal || '',
+          focusAreas: profileData.focus_areas || [],
+          goalDetails: profileData.goal_details || '',
           equipment: profileData.equipment || [],
           level: profileData.level || '',
           daysPerWeek: profileData.days_per_week?.toString() || '',
@@ -187,6 +193,9 @@ export default function App() {
         height: rawProfile.height ? Number(rawProfile.height) : null,
         injuries: rawProfile.injuries,
         goals: rawProfile.goals,
+        primary_goal: rawProfile.primaryGoal || '',
+        focus_areas: rawProfile.focusAreas || [],
+        goal_details: rawProfile.goalDetails || '',
         equipment: rawProfile.equipment,
         level: rawProfile.level,
         days_per_week: rawProfile.daysPerWeek ? Number(rawProfile.daysPerWeek) : null,
@@ -438,7 +447,7 @@ export default function App() {
                 </span>
               )}
             </h2>
-            <WorkoutPlan plans={plans} />
+            <WorkoutPlan plans={plans} dayLocations={dayLocations} workoutTypes={profile.workoutTypes} />
           </section>
         )}
       </main>
