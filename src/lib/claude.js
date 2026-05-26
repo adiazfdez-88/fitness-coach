@@ -209,8 +209,8 @@ export async function generateDayPlan({ profile, day, allDays, assignedGroup, us
       'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 2500,
+      model: 'claude-haiku-4-5',
+      max_tokens: 1600,
       temperature: 0.3,
       messages: [{ role: 'user', content: prompt }],
     }),

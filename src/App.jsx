@@ -148,7 +148,7 @@ export default function App() {
 
   useEffect(() => {
     // Timeout de seguridad: si Supabase no responde en 5s, mostramos la app igual
-    const fallback = setTimeout(() => setInitializing(false), 5000);
+    const fallback = setTimeout(() => setInitializing(false), 2000);
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       const currentUser = session?.user ?? null;
