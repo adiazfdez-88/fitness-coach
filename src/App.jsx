@@ -112,6 +112,10 @@ export default function App() {
             });
             if (profileData.training_days?.length) setSelectedDays(profileData.training_days);
             if (profileData.name) setOnboarded(true);
+          } else {
+            setProfile(EMPTY_PROFILE);
+            setSelectedDays([]);
+            setOnboarded(false);
           }
 
           const weekStart = getWeekStart();
