@@ -39,6 +39,12 @@
   display: block;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .btn-edit-profile {
   background: var(--bg-input);
   border: 1px solid var(--border);
@@ -54,6 +60,23 @@
 .btn-edit-profile:hover {
   border-color: var(--accent-light);
   color: var(--text);
+}
+
+.btn-logout {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 0.5rem 0.9rem;
+  font-size: 0.85rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.btn-logout:hover {
+  border-color: var(--error);
+  color: var(--error);
 }
 
 /* Main layout */

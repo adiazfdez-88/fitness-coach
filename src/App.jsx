@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from './lib/supabase';
 import { generateDayPlan } from './lib/claude';
 import { useLocalStorage } from './hooks/useLocalStorage';
+import AuthScreen from './components/AuthScreen';
 import WelcomeScreen from './components/WelcomeScreen';
 import ProfilePanel from './components/ProfilePanel';
 import WeeklyCalendar from './components/WeeklyCalendar';
@@ -31,10 +32,6 @@ function getWeekStart() {
   return monday.toISOString().split('T')[0];
 }
 
-function extractMuscleGroup(plan) {
-  return plan?.muscleGroup || '';
-}
-
 function extractExercises(plan) {
   if (!plan || typeof plan !== 'object') return [];
   return [
@@ -62,6 +59,7 @@ function getWeeklySplit(days) {
 }
 
 export default function App() {
+  const [user, setUser] = useState(null);
   const [rawProfile, setProfile] = useLocalStorage('fitcoach_profile', EMPTY_PROFILE);
   const profile = {
     ...EMPTY_PROFILE,
@@ -76,7 +74,6 @@ export default function App() {
 
   const [weekPlans, setWeekPlans] = useState({});
   const [loading, setLoading] = useState(false);
-  const [generatingDay, setGeneratingDay] = useState(null);
   const [error, setError] = useState(null);
   const [showProfilePanel, setShowProfilePanel] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -88,42 +85,49 @@ export default function App() {
   useEffect(() => {
     async function init() {
       try {
-        const { data: profileData } = await supabase
-          .from('profile')
-          .select('*')
-          .eq('id', 1)
-          .single();
+        const { data: { session } } = await supabase.auth.getSession();
+        const currentUser = session?.user ?? null;
+        setUser(currentUser);
 
-        if (profileData) {
-          setProfile({
-            name: profileData.name || '',
-            age: profileData.age?.toString() || '',
-            weight: profileData.weight?.toString() || '',
-            height: profileData.height?.toString() || '',
-            injuries: profileData.injuries || '',
-            goals: profileData.goals || '',
-            equipment: profileData.equipment || [],
-            level: profileData.level || '',
-            daysPerWeek: profileData.days_per_week?.toString() || '',
-            sessionTime: profileData.session_time || '',
-            workoutType: profileData.workout_type || '',
-          });
-          if (profileData.training_days?.length) setSelectedDays(profileData.training_days);
-          if (profileData.name) setOnboarded(true);
-        }
+        if (currentUser) {
+          const { data: profileData } = await supabase
+            .from('profile')
+            .select('*')
+            .eq('user_id', currentUser.id)
+            .single();
 
-        const weekStart = getWeekStart();
-        const { data: plans } = await supabase
-          .from('weekly_plans')
-          .select('day_name, workout_content')
-          .eq('week_start', weekStart);
+          if (profileData) {
+            setProfile({
+              name: profileData.name || '',
+              age: profileData.age?.toString() || '',
+              weight: profileData.weight?.toString() || '',
+              height: profileData.height?.toString() || '',
+              injuries: profileData.injuries || '',
+              goals: profileData.goals || '',
+              equipment: profileData.equipment || [],
+              level: profileData.level || '',
+              daysPerWeek: profileData.days_per_week?.toString() || '',
+              sessionTime: profileData.session_time || '',
+              workoutType: profileData.workout_type || '',
+            });
+            if (profileData.training_days?.length) setSelectedDays(profileData.training_days);
+            if (profileData.name) setOnboarded(true);
+          }
 
-        if (plans?.length) {
-          const map = {};
-          plans.forEach(p => {
-            try { map[p.day_name] = JSON.parse(p.workout_content); } catch { /* skip malformed */ }
-          });
-          setWeekPlans(map);
+          const weekStart = getWeekStart();
+          const { data: plans } = await supabase
+            .from('weekly_plans')
+            .select('day_name, workout_content')
+            .eq('week_start', weekStart)
+            .eq('user_id', currentUser.id);
+
+          if (plans?.length) {
+            const map = {};
+            plans.forEach(p => {
+              try { map[p.day_name] = JSON.parse(p.workout_content); } catch { /* skip malformed */ }
+            });
+            setWeekPlans(map);
+          }
         }
       } catch {
         // Supabase unavailable, use localStorage fallback
@@ -133,15 +137,27 @@ export default function App() {
       }
     }
     init();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      if (!currentUser) {
+        setWeekPlans({});
+        setOnboarded(false);
+        isInit.current = true;
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
-    if (!profile.name || isInit.current) return;
+    if (!profile.name || isInit.current || !user) return;
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(async () => {
       setSyncing(true);
       await supabase.from('profile').upsert({
-        id: 1,
+        user_id: user.id,
         name: profile.name,
         age: profile.age ? Number(profile.age) : null,
         weight: profile.weight ? Number(profile.weight) : null,
@@ -155,11 +171,11 @@ export default function App() {
         workout_type: profile.workoutType,
         training_days: selectedDays,
         updated_at: new Date().toISOString(),
-      });
+      }, { onConflict: 'user_id' });
       setSyncing(false);
     }, 1500);
     return () => clearTimeout(saveTimer.current);
-  }, [profile, selectedDays]);
+  }, [profile, selectedDays, user]);
 
   const isFirstVisit = !onboarded;
 
@@ -199,6 +215,7 @@ export default function App() {
   };
 
   const getLastWeekSummary = async () => {
+    if (!user) return '';
     const weekStart = getWeekStart();
     const lastWeekDate = new Date(weekStart);
     lastWeekDate.setDate(lastWeekDate.getDate() - 7);
@@ -206,7 +223,8 @@ export default function App() {
     const { data } = await supabase
       .from('weekly_plans')
       .select('day_name, workout_content')
-      .eq('week_start', lastWeekStart);
+      .eq('week_start', lastWeekStart)
+      .eq('user_id', user.id);
     if (!data?.length) return '';
     return data.map(d => {
       try {
@@ -243,11 +261,14 @@ export default function App() {
       await Promise.all(
         results.map(async ({ day, content }) => {
           await supabase.from('weekly_plans').delete()
-            .eq('week_start', weekStart).eq('day_name', day);
+            .eq('week_start', weekStart)
+            .eq('day_name', day)
+            .eq('user_id', user.id);
           await supabase.from('weekly_plans').insert({
             week_start: weekStart,
             day_name: day,
             workout_content: JSON.stringify(content),
+            user_id: user.id,
           });
           newPlans[day] = content;
         })
@@ -258,7 +279,6 @@ export default function App() {
       setError(err.message);
     } finally {
       setLoading(false);
-      setGeneratingDay(null);
     }
   };
 
@@ -270,6 +290,10 @@ export default function App() {
         </div>
       </div>
     );
+  }
+
+  if (!user) {
+    return <AuthScreen />;
   }
 
   if (isFirstVisit) {
@@ -297,12 +321,20 @@ export default function App() {
             )}
           </div>
         </div>
-        <button
-          className="btn-edit-profile"
-          onClick={() => setShowProfilePanel(true)}
-        >
-          ✏️ Editar perfil
-        </button>
+        <div className="header-actions">
+          <button
+            className="btn-edit-profile"
+            onClick={() => setShowProfilePanel(true)}
+          >
+            ✏️ Perfil
+          </button>
+          <button
+            className="btn-logout"
+            onClick={() => supabase.auth.signOut()}
+          >
+            Salir
+          </button>
+        </div>
       </header>
 
       <main className="main">
@@ -342,7 +374,7 @@ export default function App() {
             <p className="generating-text">
               {selectedDays.length === 0
                 ? 'Selecciona al menos un día de entrenamiento'
-                : 'Perfil incompleto — haz clic en "Editar perfil" para completarlo'}
+                : 'Perfil incompleto — haz clic en "Perfil" para completarlo'}
             </p>
           )}
 
