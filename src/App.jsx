@@ -82,71 +82,83 @@ export default function App() {
   const saveTimer = useRef(null);
   const isInit = useRef(true);
 
+  async function loadUserData(currentUser) {
+    isInit.current = true;
+    setWeekPlans({});
+    try {
+      const { data: profileData } = await supabase
+        .from('profile')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .single();
+
+      if (profileData) {
+        setProfile({
+          name: profileData.name || '',
+          age: profileData.age?.toString() || '',
+          weight: profileData.weight?.toString() || '',
+          height: profileData.height?.toString() || '',
+          injuries: profileData.injuries || '',
+          goals: profileData.goals || '',
+          equipment: profileData.equipment || [],
+          level: profileData.level || '',
+          daysPerWeek: profileData.days_per_week?.toString() || '',
+          sessionTime: profileData.session_time || '',
+          workoutType: profileData.workout_type || '',
+        });
+        if (profileData.training_days?.length) setSelectedDays(profileData.training_days);
+        if (profileData.name) setOnboarded(true);
+      } else {
+        setProfile(EMPTY_PROFILE);
+        setSelectedDays([]);
+        setOnboarded(false);
+      }
+
+      const weekStart = getWeekStart();
+      const { data: plans } = await supabase
+        .from('weekly_plans')
+        .select('day_name, workout_content')
+        .eq('week_start', weekStart)
+        .eq('user_id', currentUser.id);
+
+      if (plans?.length) {
+        const map = {};
+        plans.forEach(p => {
+          try { map[p.day_name] = JSON.parse(p.workout_content); } catch { /* skip malformed */ }
+        });
+        setWeekPlans(map);
+      }
+    } catch {
+      // Supabase unavailable, keep empty state
+    } finally {
+      setTimeout(() => { isInit.current = false; }, 100);
+    }
+  }
+
   useEffect(() => {
     async function init() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         const currentUser = session?.user ?? null;
         setUser(currentUser);
-
-        if (currentUser) {
-          const { data: profileData } = await supabase
-            .from('profile')
-            .select('*')
-            .eq('user_id', currentUser.id)
-            .single();
-
-          if (profileData) {
-            setProfile({
-              name: profileData.name || '',
-              age: profileData.age?.toString() || '',
-              weight: profileData.weight?.toString() || '',
-              height: profileData.height?.toString() || '',
-              injuries: profileData.injuries || '',
-              goals: profileData.goals || '',
-              equipment: profileData.equipment || [],
-              level: profileData.level || '',
-              daysPerWeek: profileData.days_per_week?.toString() || '',
-              sessionTime: profileData.session_time || '',
-              workoutType: profileData.workout_type || '',
-            });
-            if (profileData.training_days?.length) setSelectedDays(profileData.training_days);
-            if (profileData.name) setOnboarded(true);
-          } else {
-            setProfile(EMPTY_PROFILE);
-            setSelectedDays([]);
-            setOnboarded(false);
-          }
-
-          const weekStart = getWeekStart();
-          const { data: plans } = await supabase
-            .from('weekly_plans')
-            .select('day_name, workout_content')
-            .eq('week_start', weekStart)
-            .eq('user_id', currentUser.id);
-
-          if (plans?.length) {
-            const map = {};
-            plans.forEach(p => {
-              try { map[p.day_name] = JSON.parse(p.workout_content); } catch { /* skip malformed */ }
-            });
-            setWeekPlans(map);
-          }
-        }
+        if (currentUser) await loadUserData(currentUser);
       } catch {
-        // Supabase unavailable, use localStorage fallback
+        // Supabase unavailable
       } finally {
         setInitializing(false);
-        setTimeout(() => { isInit.current = false; }, 100);
       }
     }
     init();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
-      if (!currentUser) {
+      if (currentUser) {
+        await loadUserData(currentUser);
+      } else {
         setWeekPlans({});
+        setProfile(EMPTY_PROFILE);
+        setSelectedDays([]);
         setOnboarded(false);
         isInit.current = true;
       }
