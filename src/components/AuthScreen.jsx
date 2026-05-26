@@ -2,7 +2,101 @@ import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import './AuthScreen.css';
 
-export default function AuthScreen() {
+function LandingPage({ onStart }) {
+  return (
+    <div className="landing">
+      {/* Header */}
+      <div className="landing-header">
+        <div className="landing-logo-icon">
+          <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="24" cy="10" r="5" fill="currentColor"/>
+            <path d="M14 22c0-5.5 4.5-10 10-10s10 4.5 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
+            <path d="M24 22v14M17 28l-5 6M31 28l5 6" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
+            <path d="M8 20h6M34 20h6" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
+          </svg>
+        </div>
+        <h1 className="landing-title">
+          <span className="landing-title-fit">Fit</span><span className="landing-title-coach">Coach</span> <span className="landing-title-ai">AI</span>
+        </h1>
+        <div className="landing-tagline-row">
+          <span className="landing-line" />
+          <span className="landing-tagline">Tu entrenador personal inteligente</span>
+          <span className="landing-line" />
+        </div>
+      </div>
+
+      {/* Hero */}
+      <div className="landing-hero">
+        <div className="landing-hero-bg">
+          <div className="landing-figure">
+            <svg viewBox="0 0 120 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="60" cy="28" r="18" fill="rgba(255,255,255,0.25)"/>
+              <path d="M30 70c0-16.6 13.4-30 30-30s30 13.4 30 30v10H30V70z" fill="rgba(255,255,255,0.2)"/>
+              <rect x="50" y="80" width="20" height="55" rx="10" fill="rgba(255,255,255,0.2)"/>
+              <rect x="28" y="82" width="16" height="42" rx="8" fill="rgba(255,255,255,0.15)"/>
+              <rect x="76" y="82" width="16" height="42" rx="8" fill="rgba(255,255,255,0.15)"/>
+              <rect x="38" y="135" width="16" height="40" rx="8" fill="rgba(255,255,255,0.2)"/>
+              <rect x="66" y="135" width="16" height="40" rx="8" fill="rgba(255,255,255,0.2)"/>
+              <rect x="12" y="78" width="20" height="8" rx="4" fill="rgba(255,255,255,0.35)"/>
+              <rect x="88" y="78" width="20" height="8" rx="4" fill="rgba(255,255,255,0.35)"/>
+            </svg>
+          </div>
+
+          <div className="landing-badge landing-badge--tr">
+            <span className="badge-icon">🧠</span>
+            <div>
+              <div className="badge-title">Plan adaptado por IA</div>
+              <div className="badge-sub">✓ Tu historial</div>
+              <div className="badge-sub">✓ Tus lesiones</div>
+              <div className="badge-sub">✓ Tu progreso</div>
+            </div>
+          </div>
+
+          <div className="landing-badge landing-badge--bl">
+            <span className="badge-dot" />
+            <div>
+              <div className="badge-title">Hombro</div>
+              <div className="badge-tag">✓ Protegido</div>
+            </div>
+          </div>
+
+          <div className="landing-badge landing-badge--br">
+            <span className="badge-dot badge-dot--green" />
+            <div>
+              <div className="badge-title">Espalda</div>
+              <div className="badge-tag">✓ Alineada</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Features */}
+      <div className="landing-features">
+        {[
+          { icon: '🛡️', label: 'Entrenos seguros' },
+          { icon: '🎯', label: 'Adaptado a ti' },
+          { icon: '📈', label: 'Progreso real' },
+          { icon: '❤️', label: 'Largo plazo' },
+        ].map(f => (
+          <div key={f.label} className="landing-feat">
+            <span className="feat-icon">{f.icon}</span>
+            <span className="feat-label">{f.label}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* CTA */}
+      <div className="landing-cta">
+        <button className="btn-comenzar" onClick={onStart}>
+          Comenzar
+        </button>
+        <p className="landing-slogan">Tu cuerpo. Tu historial. <strong>Tu plan.</strong></p>
+      </div>
+    </div>
+  );
+}
+
+function AuthForm({ onBack }) {
   const [mode, setMode] = useState('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -15,22 +109,15 @@ export default function AuthScreen() {
     setLoading(true);
     setError(null);
     setMessage(null);
-
     if (mode === 'login') {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) setError('Email o contraseña incorrectos.');
     } else {
       const { error } = await supabase.auth.signUp({ email, password });
       if (error) setError(error.message);
-      else setMessage('¡Cuenta creada! Revisa tu email para confirmarla, luego inicia sesión.');
+      else setMessage('¡Cuenta creada! Revisa tu email para confirmarla.');
     }
     setLoading(false);
-  };
-
-  const toggleMode = () => {
-    setMode(m => m === 'login' ? 'register' : 'login');
-    setError(null);
-    setMessage(null);
   };
 
   const handleGoogle = async () => {
@@ -43,13 +130,13 @@ export default function AuthScreen() {
   };
 
   return (
-    <div className="auth-screen">
-      <div className="auth-card">
-        <div className="auth-hero">
-          <span className="auth-emoji">💪</span>
-          <h1>FitCoach AI</h1>
-          <p>Tu entrenador personal con inteligencia artificial</p>
-        </div>
+    <div className="auth-form-screen">
+      <button className="auth-back" onClick={onBack}>← Volver</button>
+
+      <div className="auth-form-card">
+        <h2 className="auth-form-title">
+          {mode === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}
+        </h2>
 
         <button className="auth-google-btn" onClick={handleGoogle}>
           <svg width="18" height="18" viewBox="0 0 48 48">
@@ -64,47 +151,35 @@ export default function AuthScreen() {
         <div className="auth-divider"><span>o</span></div>
 
         <form onSubmit={handleSubmit} className="auth-form">
-          <h2>{mode === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}</h2>
-
           <label className="auth-label">
             Email
-            <input
-              type="email"
-              placeholder="tu@email.com"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              required
-              autoComplete="email"
-            />
+            <input type="email" placeholder="tu@email.com" value={email}
+              onChange={e => setEmail(e.target.value)} required autoComplete="email" />
           </label>
-
           <label className="auth-label">
             Contraseña
-            <input
-              type="password"
-              placeholder="Mínimo 6 caracteres"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              required
-              minLength={6}
-              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-            />
+            <input type="password" placeholder="Mínimo 6 caracteres" value={password}
+              onChange={e => setPassword(e.target.value)} required minLength={6}
+              autoComplete={mode === 'login' ? 'current-password' : 'new-password'} />
           </label>
-
-          {error && <p className="auth-error">⚠️ {error}</p>}
+          {error   && <p className="auth-error">⚠️ {error}</p>}
           {message && <p className="auth-message">✅ {message}</p>}
-
           <button type="submit" className="auth-btn" disabled={loading}>
             {loading ? 'Cargando…' : mode === 'login' ? 'Entrar' : 'Crear cuenta'}
           </button>
         </form>
 
-        <button className="auth-toggle" onClick={toggleMode}>
-          {mode === 'login'
-            ? '¿No tienes cuenta? Regístrate gratis'
-            : '¿Ya tienes cuenta? Inicia sesión'}
+        <button className="auth-toggle" onClick={() => { setMode(m => m === 'login' ? 'register' : 'login'); setError(null); setMessage(null); }}>
+          {mode === 'login' ? '¿No tienes cuenta? Regístrate gratis' : '¿Ya tienes cuenta? Inicia sesión'}
         </button>
       </div>
     </div>
   );
+}
+
+export default function AuthScreen() {
+  const [showAuth, setShowAuth] = useState(false);
+  return showAuth
+    ? <AuthForm onBack={() => setShowAuth(false)} />
+    : <LandingPage onStart={() => setShowAuth(true)} />;
 }
