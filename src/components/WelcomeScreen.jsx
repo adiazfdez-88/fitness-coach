@@ -4,7 +4,7 @@ import './WelcomeScreen.css';
 const REQUIRED_FIELDS = (p) =>
   p.name && p.age && p.weight && p.height &&
   p.goals?.trim() && p.equipment?.length > 0 &&
-  p.level && p.sessionTime && p.workoutType;
+  p.level && p.sessionTime && p.workoutTypes?.length > 0;
 
 export default function WelcomeScreen({ profile, onChange, onStart }) {
   const ready = REQUIRED_FIELDS(profile);
