@@ -231,29 +231,29 @@ export default function App() {
       const lastWeekSummary = await getLastWeekSummary();
       const weekStart = getWeekStart();
       const weeklySplit = getWeeklySplit(selectedDays);
+
+      const results = await Promise.all(
+        selectedDays.map((day, i) =>
+          callAPI(day, weeklySplit[day], [], i === selectedDays.length - 1, lastWeekSummary)
+            .then(content => ({ day, content }))
+        )
+      );
+
       const newPlans = {};
-      const usedExercises = [];
+      await Promise.all(
+        results.map(async ({ day, content }) => {
+          await supabase.from('weekly_plans').delete()
+            .eq('week_start', weekStart).eq('day_name', day);
+          await supabase.from('weekly_plans').insert({
+            week_start: weekStart,
+            day_name: day,
+            workout_content: JSON.stringify(content),
+          });
+          newPlans[day] = content;
+        })
+      );
 
-      for (let i = 0; i < selectedDays.length; i++) {
-        const day = selectedDays[i];
-        const isLastDay = i === selectedDays.length - 1;
-        setGeneratingDay(day);
-
-        const content = await callAPI(day, weeklySplit[day], usedExercises.slice(-20), isLastDay, lastWeekSummary);
-
-        extractExercises(content).forEach(e => usedExercises.push(e));
-
-        await supabase.from('weekly_plans').delete()
-          .eq('week_start', weekStart).eq('day_name', day);
-        await supabase.from('weekly_plans').insert({
-          week_start: weekStart,
-          day_name: day,
-          workout_content: JSON.stringify(content),
-        });
-
-        newPlans[day] = content;
-        setWeekPlans({ ...newPlans });
-      }
+      setWeekPlans({ ...newPlans });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -331,7 +331,7 @@ export default function App() {
             {loading ? (
               <>
                 <span className="generating-spinner">⚙️</span>
-                Generando {generatingDay}…
+                Generando {selectedDays.length} días…
               </>
             ) : (
               '✨ Generar Rutina Semanal'
@@ -348,7 +348,7 @@ export default function App() {
 
           {loading && (
             <p className="generating-text">
-              Generando {generatingDay}… ({generatedDays.length + 1} de {selectedDays.length})
+              Generando todos los días en paralelo…
             </p>
           )}
 
