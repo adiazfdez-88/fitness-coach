@@ -191,6 +191,21 @@ ${isCardioDay ? cardioStructure : isFuerzaCardio ? fuerzaCardioStructure : stren
 - NO incluyas URLs en el JSON`;
 }
 
+async function fetchWithRetry(url, options, maxRetries = 3) {
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const res = await fetch(url, options);
+    if (res.status === 429 || res.status === 529) {
+      // Límite de velocidad — esperar y reintentar
+      if (attempt < maxRetries) {
+        await sleep(2000 * (attempt + 1)); // 2s, 4s, 6s
+        continue;
+      }
+    }
+    return res;
+  }
+}
+
 export async function generateDayPlan({ profile, day, allDays, assignedGroup, usedExercises, isLastDay, lastWeekSummary }) {
   const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error('VITE_ANTHROPIC_API_KEY no configurada en Vercel.');
@@ -200,7 +215,7 @@ export async function generateDayPlan({ profile, day, allDays, assignedGroup, us
     day, allDays, assignedGroup, usedExercises, isLastDay, lastWeekSummary
   );
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  const res = await fetchWithRetry('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -218,6 +233,8 @@ export async function generateDayPlan({ profile, day, allDays, assignedGroup, us
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
+    if (res.status === 429 || res.status === 529)
+      throw new Error('Demasiadas solicitudes al mismo tiempo. Inténtalo de nuevo en unos segundos.');
     throw new Error(err.error?.message || `Error ${res.status} de la API`);
   }
 
