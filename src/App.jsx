@@ -376,9 +376,7 @@ export default function App() {
             selectedDays={selectedDays}
             onChange={setSelectedDays}
             dayStatuses={dayStatuses}
-            reschedules={reschedules}
             onMarkStatus={handleMarkStatus}
-            onReschedule={setReschedules}
             onNewWeek={handleNewWeek}
             workoutTypes={profile.workoutTypes}
             dayLocations={dayLocations}

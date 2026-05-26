@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import './WeeklyCalendar.css';
 
 const ALL_DAYS = [
@@ -11,96 +10,59 @@ const ALL_DAYS = [
   { id: 'Domingo',   short: 'DOM', num: '7' },
 ];
 
-const STATUS_LABEL = {
-  completed: { label: 'Completado', cls: 'status--completed', icon: '✅' },
-  missed:    { label: 'Fallado',    cls: 'status--missed',    icon: '❌' },
-};
-
 const LOCATION_ICONS = {
-  gimnasio:  '🏋️',
-  calistenia:'💪',
-  casa:      '🏠',
-  mixto:     '⚡',
+  gimnasio:   '🏋️',
+  calistenia: '💪',
+  casa:       '🏠',
+  mixto:      '⚡',
 };
 
 const LOCATION_LABELS = {
-  gimnasio:  'Gimnasio',
-  calistenia:'Calistenia',
-  casa:      'Casa',
-  mixto:     'Mixto',
+  gimnasio:   'Gimnasio',
+  calistenia: 'Calistenia',
+  casa:       'Casa',
+  mixto:      'Mixto',
 };
 
 export default function WeeklyCalendar({
   selectedDays,
   onChange,
   dayStatuses,
-  reschedules,
   onMarkStatus,
-  onReschedule,
   onNewWeek,
   workoutTypes = [],
   dayLocations = {},
   onLocationChange,
 }) {
-  const [rescheduleOpen, setRescheduleOpen] = useState(null); // dayId being rescheduled
+  // Ciclo: no seleccionado → seleccionado (verde) → fallado (rojo) → no seleccionado
+  const handleDayClick = (dayId) => {
+    const isSelected = selectedDays.includes(dayId);
+    const status = dayStatuses[dayId];
 
-  const toggleDay = (dayId) => {
-    const updated = selectedDays.includes(dayId)
-      ? selectedDays.filter((d) => d !== dayId)
-      : [...selectedDays, dayId];
-    onChange(updated);
-  };
-
-  const handleMarkStatus = (dayId, status) => {
-    const current = dayStatuses[dayId];
-    // toggle off if already set
-    if (current === status) {
+    if (!isSelected) {
+      // Añadir al plan
+      onChange([...selectedDays, dayId]);
       onMarkStatus(dayId, null);
-      if (status === 'missed') {
-        // clear any reschedule for this day
-        const updated = { ...reschedules };
-        delete updated[dayId];
-        onReschedule(updated);
-        setRescheduleOpen(null);
-      }
+    } else if (!status || status === 'completed') {
+      // Marcar como fallado
+      onMarkStatus(dayId, 'missed');
     } else {
-      onMarkStatus(dayId, status);
-      if (status === 'missed') {
-        setRescheduleOpen(dayId);
-      } else {
-        // if changing from missed to completed, clear reschedule
-        const updated = { ...reschedules };
-        delete updated[dayId];
-        onReschedule(updated);
-        setRescheduleOpen(null);
-      }
+      // Quitar del plan
+      onChange(selectedDays.filter(d => d !== dayId));
+      onMarkStatus(dayId, null);
     }
   };
 
-  const handleReschedule = (fromDay, toDay) => {
-    const updated = { ...reschedules, [fromDay]: toDay };
-    onReschedule(updated);
-    setRescheduleOpen(null);
-  };
-
-  // Days already used as reschedule targets
-  const rescheduledTo = new Set(Object.values(reschedules));
-
-  // Days available to reschedule a missed session to
-  const availableForReschedule = ALL_DAYS
-    .map((d) => d.id)
-    .filter((d) => !selectedDays.includes(d) && !rescheduledTo.has(d));
-
   const selectedCount = selectedDays.length;
+  const hasMissed = selectedDays.some(d => dayStatuses[d] === 'missed');
 
   return (
     <div className="calendar">
       <div className="calendar-grid">
         {ALL_DAYS.map((day) => {
           const isSelected = selectedDays.includes(day.id);
-          const status = dayStatuses[day.id]; // 'completed' | 'missed' | null
-          const isRescheduleTo = rescheduledTo.has(day.id);
-          const rescheduleFrom = Object.entries(reschedules).find(([, to]) => to === day.id)?.[0];
+          const status = dayStatuses[day.id];
+          const isMissed = isSelected && status === 'missed';
 
           return (
             <div key={day.id} className="day-cell">
@@ -108,29 +70,24 @@ export default function WeeklyCalendar({
                 type="button"
                 className={[
                   'day-btn',
-                  isSelected ? 'day-btn--selected' : '',
-                  isSelected && status === 'completed' ? 'day-btn--completed' : '',
-                  isSelected && status === 'missed' ? 'day-btn--missed' : '',
-                  isRescheduleTo ? 'day-btn--rescheduled' : '',
+                  isSelected && !isMissed ? 'day-btn--selected' : '',
+                  isMissed ? 'day-btn--missed' : '',
                 ].filter(Boolean).join(' ')}
-                onClick={() => toggleDay(day.id)}
+                onClick={() => handleDayClick(day.id)}
                 title={
-                  isRescheduleTo
-                    ? `Sesión reprogramada (de ${rescheduleFrom})`
-                    : isSelected ? `Quitar ${day.id}` : `Añadir ${day.id}`
+                  !isSelected ? `Añadir ${day.id}`
+                  : !isMissed  ? `Marcar ${day.id} como fallado`
+                  : `Quitar ${day.id} del plan`
                 }
               >
                 <span className="day-num">{day.num}</span>
                 <span className="day-short">{day.short}</span>
                 <span className="day-name">{day.id}</span>
-                {isSelected && !status && <span className="day-dot" />}
-                {isSelected && status && (
-                  <span className="day-icon">{STATUS_LABEL[status].icon}</span>
-                )}
-                {isRescheduleTo && <span className="day-reschedule-badge">↩</span>}
+                {isSelected && !isMissed && <span className="day-dot" />}
+                {isMissed && <span className="day-icon">❌</span>}
               </button>
 
-              {/* Location selector (only if profile has multiple workout types) */}
+              {/* Selector de ubicación (solo si perfil tiene >1 tipo) */}
               {isSelected && workoutTypes.length > 1 && (
                 <div className="day-location">
                   {workoutTypes.map(type => {
@@ -148,61 +105,6 @@ export default function WeeklyCalendar({
                   })}
                 </div>
               )}
-
-              {/* Status controls for selected days */}
-              {isSelected && (
-                <div className="day-controls">
-                  <button
-                    className={`ctrl-btn ctrl-done ${status === 'completed' ? 'ctrl-btn--on' : ''}`}
-                    onClick={() => handleMarkStatus(day.id, 'completed')}
-                    title="Marcar como completado"
-                  >✓</button>
-                  <button
-                    className={`ctrl-btn ctrl-miss ${status === 'missed' ? 'ctrl-btn--on' : ''}`}
-                    onClick={() => handleMarkStatus(day.id, 'missed')}
-                    title="Marcar como fallado"
-                  >✗</button>
-                </div>
-              )}
-
-              {/* Reschedule picker */}
-              {status === 'missed' && rescheduleOpen === day.id && availableForReschedule.length > 0 && (
-                <div className="reschedule-picker">
-                  <span className="reschedule-label">Mover a:</span>
-                  {availableForReschedule.map((d) => (
-                    <button
-                      key={d}
-                      className="reschedule-day-btn"
-                      onClick={() => handleReschedule(day.id, d)}
-                    >
-                      {d}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {/* Show reschedule target */}
-              {status === 'missed' && reschedules[day.id] && (
-                <div className="reschedule-info">
-                  ↩ {reschedules[day.id]}
-                  <button
-                    className="reschedule-clear"
-                    onClick={() => {
-                      const updated = { ...reschedules };
-                      delete updated[day.id];
-                      onReschedule(updated);
-                    }}
-                    title="Quitar reprogramación"
-                  >✕</button>
-                </div>
-              )}
-
-              {/* Rescheduled-to info */}
-              {isRescheduleTo && (
-                <div className="rescheduled-from-info">
-                  de {rescheduleFrom}
-                </div>
-              )}
             </div>
           );
         })}
@@ -211,10 +113,10 @@ export default function WeeklyCalendar({
       <div className="calendar-footer">
         <p className="calendar-hint">
           {selectedCount === 0
-            ? 'Selecciona los días que entrenas. Usa ✓/✗ para marcar completados o fallados.'
+            ? 'Toca un día para añadirlo. Tócalo de nuevo para marcarlo como fallado.'
             : `${selectedCount} día${selectedCount !== 1 ? 's' : ''}: ${selectedDays.join(', ')}`}
         </p>
-        {Object.keys(dayStatuses).some((k) => dayStatuses[k]) && (
+        {hasMissed && (
           <button className="btn-new-week" onClick={onNewWeek}>
             🔄 Nueva semana
           </button>
