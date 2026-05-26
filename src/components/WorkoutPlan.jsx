@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
+import { buildYoutubeQuery } from '../lib/youtubeQuery';
 import './WorkoutPlan.css';
 
-function YoutubeButton({ name }) {
-  const query = encodeURIComponent(`${name} ejercicio forma correcta`);
+function YoutubeButton({ name, profile }) {
+  const query = buildYoutubeQuery(name, profile);
   const url = `https://www.youtube.com/results?search_query=${query}`;
   return (
     <a href={url} target="_blank" rel="noopener noreferrer" className="yt-btn" title="Ver video en YouTube">
@@ -14,7 +15,7 @@ function YoutubeButton({ name }) {
   );
 }
 
-function ExerciseCard({ exercise, index }) {
+function ExerciseCard({ exercise, index, profile }) {
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -25,7 +26,7 @@ function ExerciseCard({ exercise, index }) {
           <div className="ex-name-row">
             <span className="ex-name">{exercise.name}</span>
             {exercise.isKey && <span className="badge-key">CLAVE</span>}
-            <YoutubeButton name={exercise.name} />
+            <YoutubeButton name={exercise.name} profile={profile} />
           </div>
           <div className="ex-stats">
             <span className="ex-pill">{exercise.sets} series × {exercise.reps}</span>
@@ -49,7 +50,7 @@ function ExerciseCard({ exercise, index }) {
   );
 }
 
-function SimpleCard({ exercise, variant }) {
+function SimpleCard({ exercise, variant, profile }) {
   return (
     <div className={`simple-card simple-card--${variant}`}>
       <div className="simple-row">
@@ -57,7 +58,7 @@ function SimpleCard({ exercise, variant }) {
         <span className="simple-duration">
           {exercise.duration || (exercise.sets ? `${exercise.sets}×${exercise.reps}` : '')}
         </span>
-        <YoutubeButton name={exercise.name} />
+        <YoutubeButton name={exercise.name} profile={profile} />
       </div>
       {exercise.why && (
         <p className="ex-why"><span className="ex-why-dot" />  {exercise.why}</p>
@@ -76,7 +77,7 @@ function SectionHeader({ title, icon }) {
   );
 }
 
-function DayPlan({ plan }) {
+function DayPlan({ plan, profile }) {
   return (
     <div className="day-plan">
       <div className="day-hero">
@@ -90,28 +91,28 @@ function DayPlan({ plan }) {
       {plan.warmup?.length > 0 && (
         <div className="ex-section">
           <SectionHeader title="Calentamiento" icon="🔥" />
-          {plan.warmup.map((ex, i) => <SimpleCard key={i} exercise={ex} variant="warmup" />)}
+          {plan.warmup.map((ex, i) => <SimpleCard key={i} exercise={ex} variant="warmup" profile={profile} />)}
         </div>
       )}
 
       {plan.main?.length > 0 && (
         <div className="ex-section">
           <SectionHeader title="Bloque principal" icon="🏋️" />
-          {plan.main.map((ex, i) => <ExerciseCard key={i} exercise={ex} index={i} />)}
+          {plan.main.map((ex, i) => <ExerciseCard key={i} exercise={ex} index={i} profile={profile} />)}
         </div>
       )}
 
       {plan.core?.length > 0 && (
         <div className="ex-section">
           <SectionHeader title="Core / Abdomen" icon="⚡" />
-          {plan.core.map((ex, i) => <ExerciseCard key={i} exercise={ex} index={i} />)}
+          {plan.core.map((ex, i) => <ExerciseCard key={i} exercise={ex} index={i} profile={profile} />)}
         </div>
       )}
 
       {plan.cooldown?.length > 0 && (
         <div className="ex-section">
           <SectionHeader title="Vuelta a la calma" icon="🧘" />
-          {plan.cooldown.map((ex, i) => <SimpleCard key={i} exercise={ex} variant="cooldown" />)}
+          {plan.cooldown.map((ex, i) => <SimpleCard key={i} exercise={ex} variant="cooldown" profile={profile} />)}
         </div>
       )}
 
@@ -135,7 +136,7 @@ function getTodayIdx(plans) {
 
 const LOCATION_ICONS = { gimnasio: '🏋️', calistenia: '💪', casa: '🏠', mixto: '⚡', cardio: '🏃', fuerza_cardio: '🔥' };
 
-export default function WorkoutPlan({ plans, dayLocations = {}, workoutTypes = [] }) {
+export default function WorkoutPlan({ plans, dayLocations = {}, workoutTypes = [], profile = {} }) {
   const [activeIdx, setActiveIdx] = useState(() => getTodayIdx(plans));
   const ref = useRef(null);
 
@@ -177,7 +178,7 @@ export default function WorkoutPlan({ plans, dayLocations = {}, workoutTypes = [
           })}
         </div>
       )}
-      <DayPlan plan={activePlan} />
+      <DayPlan plan={activePlan} profile={profile} />
     </div>
   );
 }

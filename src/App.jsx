@@ -451,7 +451,7 @@ export default function App() {
                 </span>
               )}
             </h2>
-            <WorkoutPlan plans={plans} dayLocations={dayLocations} workoutTypes={profile.workoutTypes} />
+            <WorkoutPlan plans={plans} dayLocations={dayLocations} workoutTypes={profile.workoutTypes} profile={profile} />
           </section>
         )}
       </main>
