@@ -27,64 +27,36 @@ const LOCATION_LABELS = {
 export default function WeeklyCalendar({
   selectedDays,
   onChange,
-  dayStatuses,
-  onMarkStatus,
   onNewWeek,
   workoutTypes = [],
   dayLocations = {},
   onLocationChange,
 }) {
-  // Ciclo: no seleccionado → seleccionado (verde) → fallado (rojo) → no seleccionado
-  const handleDayClick = (dayId) => {
-    const isSelected = selectedDays.includes(dayId);
-    const status = dayStatuses[dayId];
-
-    if (!isSelected) {
-      // Añadir al plan
-      onChange([...selectedDays, dayId]);
-      onMarkStatus(dayId, null);
-    } else if (!status || status === 'completed') {
-      // Marcar como fallado
-      onMarkStatus(dayId, 'missed');
-    } else {
-      // Quitar del plan
-      onChange(selectedDays.filter(d => d !== dayId));
-      onMarkStatus(dayId, null);
-    }
+  const toggleDay = (dayId) => {
+    const updated = selectedDays.includes(dayId)
+      ? selectedDays.filter(d => d !== dayId)
+      : [...selectedDays, dayId];
+    onChange(updated);
   };
-
-  const selectedCount = selectedDays.length;
-  const hasMissed = selectedDays.some(d => dayStatuses[d] === 'missed');
 
   return (
     <div className="calendar">
       <div className="calendar-grid">
         {ALL_DAYS.map((day) => {
           const isSelected = selectedDays.includes(day.id);
-          const status = dayStatuses[day.id];
-          const isMissed = isSelected && status === 'missed';
 
           return (
             <div key={day.id} className="day-cell">
               <button
                 type="button"
-                className={[
-                  'day-btn',
-                  isSelected && !isMissed ? 'day-btn--selected' : '',
-                  isMissed ? 'day-btn--missed' : '',
-                ].filter(Boolean).join(' ')}
-                onClick={() => handleDayClick(day.id)}
-                title={
-                  !isSelected ? `Añadir ${day.id}`
-                  : !isMissed  ? `Marcar ${day.id} como fallado`
-                  : `Quitar ${day.id} del plan`
-                }
+                className={['day-btn', isSelected ? 'day-btn--selected' : ''].filter(Boolean).join(' ')}
+                onClick={() => toggleDay(day.id)}
+                title={isSelected ? `Quitar ${day.id}` : `Añadir ${day.id}`}
               >
                 <span className="day-num">{day.num}</span>
                 <span className="day-short">{day.short}</span>
                 <span className="day-name">{day.id}</span>
-                {isSelected && !isMissed && <span className="day-dot" />}
-                {isMissed && <span className="day-icon">❌</span>}
+                {isSelected && <span className="day-dot" />}
               </button>
 
               {/* Selector de ubicación (solo si perfil tiene >1 tipo) */}
@@ -112,11 +84,11 @@ export default function WeeklyCalendar({
 
       <div className="calendar-footer">
         <p className="calendar-hint">
-          {selectedCount === 0
-            ? 'Toca un día para añadirlo. Tócalo de nuevo para marcarlo como fallado.'
-            : `${selectedCount} día${selectedCount !== 1 ? 's' : ''}: ${selectedDays.join(', ')}`}
+          {selectedDays.length === 0
+            ? 'Toca los días que vas a entrenar esta semana.'
+            : `${selectedDays.length} día${selectedDays.length !== 1 ? 's' : ''}: ${selectedDays.join(', ')}`}
         </p>
-        {hasMissed && (
+        {selectedDays.length > 0 && (
           <button className="btn-new-week" onClick={onNewWeek}>
             🔄 Nueva semana
           </button>

@@ -375,8 +375,6 @@ export default function App() {
           <WeeklyCalendar
             selectedDays={selectedDays}
             onChange={setSelectedDays}
-            dayStatuses={dayStatuses}
-            onMarkStatus={handleMarkStatus}
             onNewWeek={handleNewWeek}
             workoutTypes={profile.workoutTypes}
             dayLocations={dayLocations}
