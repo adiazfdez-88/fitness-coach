@@ -138,24 +138,20 @@ export default function App() {
   }
 
   useEffect(() => {
-    async function init() {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        const currentUser = session?.user ?? null;
-        setUser(currentUser);
-        if (currentUser) await loadUserData(currentUser);
-      } catch {
-        // Supabase unavailable
-      } finally {
-        setInitializing(false);
-      }
-    }
-    init();
+    const fallback = setTimeout(() => setInitializing(false), 5000);
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
-      if (event === 'SIGNED_IN') {
+
+      if (event === 'INITIAL_SESSION') {
+        try {
+          if (currentUser) await loadUserData(currentUser);
+        } finally {
+          clearTimeout(fallback);
+          setInitializing(false);
+        }
+      } else if (event === 'SIGNED_IN') {
         await loadUserData(currentUser);
       } else if (event === 'SIGNED_OUT') {
         setWeekPlans({});
@@ -164,10 +160,13 @@ export default function App() {
         setOnboarded(false);
         isInit.current = true;
       }
-      // TOKEN_REFRESHED / USER_UPDATED: solo actualizar user, no recargar datos
+      // TOKEN_REFRESHED / USER_UPDATED: solo actualizar user
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(fallback);
+      subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
