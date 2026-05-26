@@ -190,14 +190,14 @@ export default function UserProfile({ profile, onChange }) {
       </div>
 
       <div className="form-group">
-        <label>Tipo de entrenamiento</label>
+        <label>Tipo de entrenamiento <span style={{fontWeight:400,color:'var(--text-muted)',fontSize:'0.82rem'}}>(puedes elegir varios)</span></label>
         <div className="chip-group">
           {WORKOUT_TYPES.map((wt) => (
             <button
               key={wt.id}
               type="button"
-              className={`chip chip--wide ${profile.workoutType === wt.id ? 'chip--active' : ''}`}
-              onClick={() => handleChange('workoutType', profile.workoutType === wt.id ? '' : wt.id)}
+              className={`chip chip--wide ${(profile.workoutTypes || []).includes(wt.id) ? 'chip--active' : ''}`}
+              onClick={() => toggleChip('workoutTypes', wt.id)}
             >
               {wt.label}
             </button>

@@ -30,10 +30,11 @@ function extractJSON(text) {
 }
 
 function buildPrompt(profile, day, allDays, assignedGroup, usedExercises, isLastDay, lastWeekSummary) {
-  const workoutLabel = WORKOUT_TYPE_LABELS[profile.workoutType] || profile.workoutType;
-  const typeRule = profile.workoutType === 'calistenia'
+  const types = Array.isArray(profile.workoutTypes) ? profile.workoutTypes : [profile.workoutType].filter(Boolean);
+  const onlyCalistenia = types.length === 1 && types[0] === 'calistenia';
+  const typeRule = onlyCalistenia
     ? 'SOLO peso corporal, sin equipamiento externo.'
-    : `Equipamiento: ${workoutLabel}.`;
+    : `Equipamiento/entornos: ${types.map(t => WORKOUT_TYPE_LABELS[t] || t).join(' + ')}.`;
   const injuryNote = buildInjuryNote(profile.injuries);
 
   const lastWeekSection = lastWeekSummary

@@ -20,7 +20,7 @@ const EMPTY_PROFILE = {
   level: '',
   daysPerWeek: '',
   sessionTime: '',
-  workoutType: '',
+  workoutTypes: [],
 };
 
 function getWeekStart() {
@@ -65,7 +65,9 @@ export default function App() {
     ...EMPTY_PROFILE,
     ...rawProfile,
     goals: Array.isArray(rawProfile.goals) ? rawProfile.goals.join(', ') : (rawProfile.goals ?? ''),
-    workoutType: rawProfile.workoutType ?? '',
+    workoutTypes: Array.isArray(rawProfile.workoutTypes)
+      ? rawProfile.workoutTypes
+      : rawProfile.workoutType ? [rawProfile.workoutType] : [],
   };
   const [selectedDays, setSelectedDays] = useLocalStorage('fitcoach_days', []);
   const [dayStatuses, setDayStatuses] = useLocalStorage('fitcoach_day_statuses', {});
@@ -104,7 +106,7 @@ export default function App() {
           level: profileData.level || '',
           daysPerWeek: profileData.days_per_week?.toString() || '',
           sessionTime: profileData.session_time || '',
-          workoutType: profileData.workout_type || '',
+          workoutTypes: profileData.workout_types || [],
         });
         if (profileData.training_days?.length) setSelectedDays(profileData.training_days);
         if (profileData.name) setOnboarded(true);
@@ -150,48 +152,49 @@ export default function App() {
     }
     init();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
-      if (currentUser) {
+      if (event === 'SIGNED_IN') {
         await loadUserData(currentUser);
-      } else {
+      } else if (event === 'SIGNED_OUT') {
         setWeekPlans({});
         setProfile(EMPTY_PROFILE);
         setSelectedDays([]);
         setOnboarded(false);
         isInit.current = true;
       }
+      // TOKEN_REFRESHED / USER_UPDATED: solo actualizar user, no recargar datos
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
-    if (!profile.name || isInit.current || !user) return;
+    if (!rawProfile.name || isInit.current || !user) return;
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(async () => {
       setSyncing(true);
       await supabase.from('profile').upsert({
         user_id: user.id,
-        name: profile.name,
-        age: profile.age ? Number(profile.age) : null,
-        weight: profile.weight ? Number(profile.weight) : null,
-        height: profile.height ? Number(profile.height) : null,
-        injuries: profile.injuries,
-        goals: profile.goals,
-        equipment: profile.equipment,
-        level: profile.level,
-        days_per_week: profile.daysPerWeek ? Number(profile.daysPerWeek) : null,
-        session_time: profile.sessionTime,
-        workout_type: profile.workoutType,
+        name: rawProfile.name,
+        age: rawProfile.age ? Number(rawProfile.age) : null,
+        weight: rawProfile.weight ? Number(rawProfile.weight) : null,
+        height: rawProfile.height ? Number(rawProfile.height) : null,
+        injuries: rawProfile.injuries,
+        goals: rawProfile.goals,
+        equipment: rawProfile.equipment,
+        level: rawProfile.level,
+        days_per_week: rawProfile.daysPerWeek ? Number(rawProfile.daysPerWeek) : null,
+        session_time: rawProfile.sessionTime,
+        workout_types: rawProfile.workoutTypes || [],
         training_days: selectedDays,
         updated_at: new Date().toISOString(),
       }, { onConflict: 'user_id' });
       setSyncing(false);
     }, 1500);
     return () => clearTimeout(saveTimer.current);
-  }, [profile, selectedDays, user]);
+  }, [rawProfile, selectedDays, user]);
 
   const isFirstVisit = !onboarded;
 
@@ -204,7 +207,7 @@ export default function App() {
     profile.equipment?.length > 0 &&
     profile.level &&
     profile.sessionTime &&
-    profile.workoutType &&
+    profile.workoutTypes?.length > 0 &&
     selectedDays.length > 0;
 
   const generatedDays = selectedDays.filter(d => weekPlans[d]);
