@@ -69,9 +69,11 @@
 
 .landing-hero-bg {
   position: relative;
-  background: linear-gradient(145deg, #3d5c1e 0%, #5a8a2a 60%, #7aaa40 100%);
+  background-size: cover;
+  background-position: center top;
+  background-color: #3d5c1e;
   border-radius: 28px;
-  height: 280px;
+  height: 300px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -79,33 +81,15 @@
   box-shadow: 0 12px 40px rgba(61, 92, 30, 0.35);
 }
 
-.landing-hero-bg::before {
-  content: '';
+.landing-hero-overlay {
   position: absolute;
-  width: 220px;
-  height: 220px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.06);
-  top: -40px;
-  right: -40px;
-}
-
-.landing-hero-bg::after {
-  content: '';
-  position: absolute;
-  width: 160px;
-  height: 160px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.05);
-  bottom: -30px;
-  left: -30px;
-}
-
-.landing-figure {
-  width: 100px;
-  height: 150px;
-  opacity: 0.85;
-  z-index: 1;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(30, 50, 10, 0.15) 0%,
+    rgba(30, 50, 10, 0.35) 100%
+  );
+  border-radius: 28px;
 }
 
 /* Floating badges */

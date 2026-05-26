@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
+import heroImg from '../assets/hero.png';
 import './AuthScreen.css';
 
 function LandingPage({ onStart }) {
@@ -27,20 +28,8 @@ function LandingPage({ onStart }) {
 
       {/* Hero */}
       <div className="landing-hero">
-        <div className="landing-hero-bg">
-          <div className="landing-figure">
-            <svg viewBox="0 0 120 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="60" cy="28" r="18" fill="rgba(255,255,255,0.25)"/>
-              <path d="M30 70c0-16.6 13.4-30 30-30s30 13.4 30 30v10H30V70z" fill="rgba(255,255,255,0.2)"/>
-              <rect x="50" y="80" width="20" height="55" rx="10" fill="rgba(255,255,255,0.2)"/>
-              <rect x="28" y="82" width="16" height="42" rx="8" fill="rgba(255,255,255,0.15)"/>
-              <rect x="76" y="82" width="16" height="42" rx="8" fill="rgba(255,255,255,0.15)"/>
-              <rect x="38" y="135" width="16" height="40" rx="8" fill="rgba(255,255,255,0.2)"/>
-              <rect x="66" y="135" width="16" height="40" rx="8" fill="rgba(255,255,255,0.2)"/>
-              <rect x="12" y="78" width="20" height="8" rx="4" fill="rgba(255,255,255,0.35)"/>
-              <rect x="88" y="78" width="20" height="8" rx="4" fill="rgba(255,255,255,0.35)"/>
-            </svg>
-          </div>
+        <div className="landing-hero-bg" style={{ backgroundImage: `url(${heroImg})` }}>
+          <div className="landing-hero-overlay" />
 
           <div className="landing-badge landing-badge--tr">
             <span className="badge-icon">🧠</span>
