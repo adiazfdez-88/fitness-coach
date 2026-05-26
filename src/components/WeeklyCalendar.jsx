@@ -31,8 +31,11 @@ export default function WeeklyCalendar({
   workoutTypes = [],
   dayLocations = {},
   onLocationChange,
+  loading = false,
+  weekPlans = {},
 }) {
   const toggleDay = (dayId) => {
+    if (loading) return; // no cambiar días mientras genera
     const updated = selectedDays.includes(dayId)
       ? selectedDays.filter(d => d !== dayId)
       : [...selectedDays, dayId];
@@ -44,19 +47,27 @@ export default function WeeklyCalendar({
       <div className="calendar-grid">
         {ALL_DAYS.map((day) => {
           const isSelected = selectedDays.includes(day.id);
+          const isDone    = isSelected && !!weekPlans[day.id];
+          const isPending = isSelected && loading && !isDone;
 
           return (
             <div key={day.id} className="day-cell">
               <button
                 type="button"
-                className={['day-btn', isSelected ? 'day-btn--selected' : ''].filter(Boolean).join(' ')}
+                className={[
+                  'day-btn',
+                  isSelected && !isDone ? 'day-btn--selected' : '',
+                  isDone ? 'day-btn--done' : '',
+                ].filter(Boolean).join(' ')}
                 onClick={() => toggleDay(day.id)}
                 title={isSelected ? `Quitar ${day.id}` : `Añadir ${day.id}`}
               >
                 <span className="day-num">{day.num}</span>
                 <span className="day-short">{day.short}</span>
                 <span className="day-name">{day.id}</span>
-                {isSelected && <span className="day-dot" />}
+                {isPending && <span className="day-dot day-dot--pulse" />}
+                {isDone    && <span className="day-check">✓</span>}
+                {isSelected && !isPending && !isDone && <span className="day-dot" />}
               </button>
 
               {/* Selector de ubicación (solo si perfil tiene >1 tipo) */}

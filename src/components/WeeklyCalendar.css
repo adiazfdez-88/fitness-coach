@@ -99,6 +99,31 @@
   margin-top: 2px;
 }
 
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.3; transform: scale(2); }
+}
+
+.day-dot--pulse {
+  animation: pulse-dot 0.9s ease-in-out infinite;
+}
+
+.day-check {
+  font-size: 0.9rem;
+  color: #166534;
+  font-weight: 700;
+  margin-top: 2px;
+  line-height: 1;
+}
+
+.day-btn--done {
+  border-color: #059669;
+  background: rgba(5, 150, 105, 0.12);
+}
+
+.day-btn--done .day-num  { color: #166534; }
+.day-btn--done .day-short { color: #166534; }
+
 .day-icon {
   font-size: 0.85rem;
   margin-top: 1px;
