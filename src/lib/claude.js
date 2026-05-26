@@ -3,7 +3,8 @@ const WORKOUT_TYPE_LABELS = {
   calistenia: 'Calistenia (SOLO peso corporal)',
   casa:       'Casa con mancuernas (mancuernas + peso corporal)',
   mixto:      'Mixto (gimnasio + calistenia)',
-  cardio:     'Cardio / Running (carrera, intervalos, HIIT cardio — sin pesas)',
+  cardio:        'Cardio / Running (carrera, intervalos, HIIT cardio — sin pesas)',
+  fuerza_cardio: 'Fuerza + Cardio (primera mitad pesas, segunda mitad cardio o circuito mixto)',
 };
 
 function buildInjuryNote(injuries) {
@@ -33,6 +34,7 @@ function extractJSON(text) {
 function buildPrompt(profile, day, allDays, assignedGroup, usedExercises, isLastDay, lastWeekSummary) {
   const types = Array.isArray(profile.workoutTypes) ? profile.workoutTypes : [profile.workoutType].filter(Boolean);
   const isCardioDay = types.length === 1 && types[0] === 'cardio';
+  const isFuerzaCardio = types.length === 1 && types[0] === 'fuerza_cardio';
   const onlyCalistenia = types.length === 1 && types[0] === 'calistenia';
   const typeRule = isCardioDay
     ? 'DÍA DE CARDIO / RUNNING. Genera un plan de carrera o cardio, NO de fuerza.'
@@ -44,7 +46,7 @@ function buildPrompt(profile, day, allDays, assignedGroup, usedExercises, isLast
   const lastWeekSection = lastWeekSummary
     ? `SEMANA ANTERIOR (para continuidad y progresión):\n${lastWeekSummary}\n\n`
     : '';
-  const groupSection = !isCardioDay && assignedGroup
+  const groupSection = !isCardioDay && !isFuerzaCardio && assignedGroup
     ? `GRUPO MUSCULAR PARA HOY: ${assignedGroup}\nEl campo "muscleGroup" debe reflejar exactamente este grupo.\n\n`
     : '';
   const avoidSection = usedExercises?.length
@@ -136,6 +138,48 @@ Reglas:
 - cooldown: exactamente 2 elementos
 - Nivel de dificultad: ${profile.level}`;
 
+  const fuerzaCardioStructure = `{
+  "day": "${day}",
+  "muscleGroup": "Fuerza + Cardio",
+  "weekTip": ${isLastDay ? '"3 recomendaciones: una de nutrición pre/post entreno mixto, una de recuperación, una de progresión."' : 'null'},
+  "warmup": [
+    {"name": "ejercicio de calentamiento dinámico", "duration": "X min", "why": "razón en 1 línea"}
+  ],
+  "main": [
+    {
+      "name": "ejercicio de fuerza",
+      "sets": "X",
+      "reps": "X-X",
+      "rest": "Xs",
+      "technique": "consejo técnico",
+      "why": "razón en 1 línea",
+      "isKey": false
+    }
+  ],
+  "core": [
+    {
+      "name": "ejercicio de core",
+      "sets": "X",
+      "reps": "X o Xs",
+      "rest": "Xs",
+      "technique": "consejo técnico",
+      "why": "razón en 1 línea",
+      "isKey": false
+    }
+  ],
+  "cooldown": [
+    {"name": "estiramiento", "duration": "X seg", "why": "razón en 1 línea"}
+  ]
+}
+
+Reglas Fuerza + Cardio:
+- warmup: 2 elementos dinámicos
+- main: 3 ejercicios de fuerza compuestos (con series/reps) seguidos de 2 bloques de cardio (con duración/distancia). Marca isKey:true en el ejercicio de fuerza principal y en el bloque cardio principal
+- core: 2 ejercicios
+- cooldown: 2 estiramientos
+- La sesión debe tener estructura clara: BLOQUE FUERZA → BLOQUE CARDIO
+- Nivel: ${profile.level}`;
+
   return `Eres un entrenador personal experto. Genera la rutina de ${day} en español.
 
 ${weekSection}${groupSection}${avoidSection}${lastWeekSection}${injuryNote}Perfil: ${profile.name}, ${profile.age}a, ${profile.weight}kg, ${profile.height}cm | Nivel: ${profile.level} | Sesión: ${profile.sessionTime} | Objetivos: ${profile.goals} | ${typeRule}
@@ -143,7 +187,7 @@ ${weekSection}${groupSection}${avoidSection}${lastWeekSection}${injuryNote}Perfi
 Responde ÚNICAMENTE con un objeto JSON válido. Sin texto antes ni después. Sin bloques markdown. Solo el JSON puro.
 
 Estructura exacta:
-${isCardioDay ? cardioStructure : strengthStructure}
+${isCardioDay ? cardioStructure : isFuerzaCardio ? fuerzaCardioStructure : strengthStructure}
 - NO incluyas URLs en el JSON`;
 }
 

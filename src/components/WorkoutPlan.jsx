@@ -133,7 +133,7 @@ function getTodayIdx(plans) {
   return idx !== -1 ? idx : 0;
 }
 
-const LOCATION_ICONS = { gimnasio: '🏋️', calistenia: '💪', casa: '🏠', mixto: '⚡', cardio: '🏃' };
+const LOCATION_ICONS = { gimnasio: '🏋️', calistenia: '💪', casa: '🏠', mixto: '⚡', cardio: '🏃', fuerza_cardio: '🔥' };
 
 export default function WorkoutPlan({ plans, dayLocations = {}, workoutTypes = [] }) {
   const [activeIdx, setActiveIdx] = useState(() => getTodayIdx(plans));

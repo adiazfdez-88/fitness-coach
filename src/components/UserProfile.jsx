@@ -28,6 +28,7 @@ const WORKOUT_TYPES = [
   { id: 'casa', label: '🏠 Casa con mancuernas' },
   { id: 'mixto', label: '⚡ Mixto (gimnasio + calistenia)' },
   { id: 'cardio', label: '🏃 Cardio / Running' },
+  { id: 'fuerza_cardio', label: '🔥 Fuerza + Cardio' },
 ];
 
 const PRIMARY_GOALS = [
