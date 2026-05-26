@@ -27,10 +27,7 @@
 
 .welcome-hero h1 {
   font-size: 2.5rem;
-  background: linear-gradient(135deg, #a78bfa, #7c3aed);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--accent);
   margin-bottom: 0.5rem;
 }
 

@@ -38,7 +38,7 @@
 
 .day-btn:hover {
   border-color: var(--accent-light);
-  background: rgba(139, 92, 246, 0.07);
+  background: rgba(45, 90, 27, 0.07);
 }
 
 .day-btn--selected {
@@ -68,10 +68,10 @@
   line-height: 1;
 }
 
-.day-btn--selected .day-num { color: #c4b5fd; }
-.day-btn--completed .day-num { color: #6ee7b7; }
-.day-btn--missed .day-num { color: #fca5a5; }
-.day-btn--rescheduled .day-num { color: #67e8f9; }
+.day-btn--selected .day-num { color: var(--accent); }
+.day-btn--completed .day-num { color: #166534; }
+.day-btn--missed .day-num { color: #991b1b; }
+.day-btn--rescheduled .day-num { color: #1e4e6b; }
 
 .day-short {
   font-size: 0.65rem;
@@ -81,10 +81,10 @@
   text-transform: uppercase;
 }
 
-.day-btn--selected .day-short { color: #a78bfa; }
-.day-btn--completed .day-short { color: #34d399; }
-.day-btn--missed .day-short { color: #f87171; }
-.day-btn--rescheduled .day-short { color: #22d3ee; }
+.day-btn--selected .day-short { color: var(--accent-light); }
+.day-btn--completed .day-short { color: #166534; }
+.day-btn--missed .day-short { color: #991b1b; }
+.day-btn--rescheduled .day-short { color: #1e4e6b; }
 
 .day-name {
   font-size: 0;

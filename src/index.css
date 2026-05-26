@@ -5,23 +5,24 @@
 }
 
 :root {
-  --bg: #0f0f13;
-  --bg-card: #1a1a24;
-  --bg-input: #12121a;
-  --border: #2a2a3a;
-  --accent: #7c3aed;
-  --accent-light: #8b5cf6;
-  --accent-glow: rgba(124, 58, 237, 0.25);
-  --text: #f0f0f5;
-  --text-muted: #8888aa;
-  --success: #10b981;
-  --error: #ef4444;
+  --bg: #f7f5f0;
+  --bg-card: #ffffff;
+  --bg-input: #f0ede6;
+  --border: #ddd9d0;
+  --accent: #2d5a1b;
+  --accent-light: #4a9e2a;
+  --accent-glow: rgba(45, 90, 27, 0.15);
+  --accent2: #8b6914;
+  --text: #1a1a1a;
+  --text-muted: #666666;
+  --success: #2d5a1b;
+  --error: #c0392b;
   --radius: 12px;
   --radius-sm: 8px;
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;
@@ -71,6 +72,7 @@ textarea {
 
 select option {
   background: var(--bg-card);
+  color: var(--text);
 }
 
 button {

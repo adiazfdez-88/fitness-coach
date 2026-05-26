@@ -29,10 +29,7 @@
 
 .header-title {
   font-size: 1.25rem;
-  background: linear-gradient(135deg, #a78bfa, #7c3aed);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--accent);
   margin: 0;
 }
 

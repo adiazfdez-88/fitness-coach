@@ -1,105 +1,339 @@
-.workout-plan {
-  position: relative;
-}
-
-.plan-actions {
+/* ── Day tabs ─────────────────────────────────────────── */
+.day-tabs {
   display: flex;
-  gap: 0.75rem;
-  justify-content: flex-end;
-  margin-bottom: 1.25rem;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+  margin-bottom: 1.75rem;
+  scrollbar-width: none;
 }
+.day-tabs::-webkit-scrollbar { display: none; }
 
-.btn-action {
-  background: var(--bg-input);
-  border: 1px solid var(--border);
-  color: var(--text-muted);
-  padding: 0.5rem 1rem;
-  font-size: 0.85rem;
+.day-tab {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.55rem 1rem;
   border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  cursor: pointer;
   transition: all 0.15s;
+  min-width: 72px;
 }
-
-.btn-action:hover {
+.day-tab:hover {
   border-color: var(--accent-light);
   color: var(--text);
 }
-
-.plan-content {
-  line-height: 1.75;
+.day-tab--active {
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  border-color: var(--accent);
+  color: var(--text);
 }
-
-.plan-content h1 {
-  font-size: 1.6rem;
-  color: #a78bfa;
-  margin: 0 0 1.25rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 2px solid var(--accent);
-}
-
-.plan-content h2 {
-  font-size: 1.25rem;
-  color: #c4b5fd;
-  margin: 1.75rem 0 0.75rem;
-  padding: 0.6rem 1rem;
-  background: rgba(124, 58, 237, 0.12);
-  border-left: 3px solid var(--accent);
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-}
-
-.plan-content h3 {
-  font-size: 1rem;
-  color: #ddd6fe;
-  margin: 1.25rem 0 0.5rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+.day-tab-name {
+  font-weight: 600;
   font-size: 0.85rem;
 }
+.day-tab-group {
+  font-size: 0.68rem;
+  opacity: 0.65;
+  max-width: 80px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
-.plan-content p {
+/* ── Day hero header ──────────────────────────────────── */
+.day-hero {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+.day-hero-label {
+  font-size: 0.72rem;
+  font-family: 'DM Mono', monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent-light);
+  margin: 0 0 0.25rem;
+  opacity: 0.8;
+}
+.day-hero-name {
+  font-family: 'Bebas Neue', 'DM Sans', sans-serif;
+  font-size: 2.6rem;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  margin: 0 0 0.35rem;
+  color: var(--accent);
+}
+.day-hero-group {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  margin: 0;
+  font-weight: 500;
+}
+
+/* ── Section separator ────────────────────────────────── */
+.ex-section {
+  margin-bottom: 2rem;
+}
+.sec-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.9rem;
+}
+.sec-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+.sec-title {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.sec-line {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+  margin-left: 0.25rem;
+}
+
+/* ── Exercise cards (main / core) ─────────────────────── */
+.ex-card {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 0.75rem;
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+.ex-card--key {
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  background: color-mix(in srgb, var(--accent) 6%, var(--bg-input));
+}
+
+.ex-card-top {
+  display: flex;
+  gap: 0.9rem;
+  padding: 0.9rem 1rem;
+  align-items: flex-start;
+}
+
+.ex-num {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  color: var(--accent-light);
+  font-family: 'DM Mono', monospace;
+  font-size: 0.78rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+}
+
+.ex-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.ex-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.35rem;
+}
+.ex-name {
+  font-weight: 600;
+  font-size: 0.95rem;
   color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+}
+
+.badge-key {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: var(--accent2);
+  background: rgba(139, 105, 20, 0.1);
+  border: 1px solid rgba(139, 105, 20, 0.3);
+  border-radius: 4px;
+  padding: 0.1rem 0.4rem;
+}
+
+.ex-stats {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
   margin-bottom: 0.4rem;
 }
-
-.plan-content strong {
-  color: #e2d9f3;
-  font-weight: 700;
-}
-
-.plan-content em {
-  color: #a78bfa;
-  font-style: italic;
-}
-
-.plan-content code {
-  background: rgba(124, 58, 237, 0.15);
-  color: #c4b5fd;
-  padding: 0.1em 0.4em;
-  border-radius: 4px;
-  font-size: 0.9em;
-  font-family: monospace;
-}
-
-.plan-content ul, .plan-content ol {
-  padding-left: 1.5rem;
-  margin: 0.5rem 0 0.75rem;
-}
-
-.plan-content li {
-  color: var(--text);
-  margin-bottom: 0.3rem;
-  padding-left: 0.25rem;
-}
-
-.plan-content li::marker {
+.ex-pill {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.8rem;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
   color: var(--accent-light);
+  border-radius: 4px;
+  padding: 0.15rem 0.5rem;
+}
+.ex-rest {
+  font-size: 0.78rem;
+  color: var(--text-muted);
 }
 
-.plan-content hr {
+.ex-why {
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  font-style: italic;
+  margin-top: 0.1rem;
+  line-height: 1.5;
+}
+.ex-why-dot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent-light);
+  flex-shrink: 0;
+  margin-top: 5px;
+  opacity: 0.6;
+}
+
+.ex-tech-toggle {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 1rem 0.5rem 3rem;
   border: none;
   border-top: 1px solid var(--border);
-  margin: 1.5rem 0;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  text-align: left;
+}
+.ex-tech-toggle:hover {
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  color: var(--text);
+}
+.ex-chevron {
+  font-size: 1rem;
+  transition: transform 0.2s;
+  display: inline-block;
+}
+.ex-chevron--open {
+  transform: rotate(90deg);
+}
+.ex-tech-body {
+  padding: 0.6rem 1rem 0.75rem 3rem;
+  font-size: 0.83rem;
+  color: var(--text);
+  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
+  line-height: 1.6;
 }
 
-.plan-content br {
-  line-height: 0.5;
+/* ── Simple cards (warmup / cooldown) ─────────────────── */
+.simple-card {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.7rem 0.9rem;
+  margin-bottom: 0.6rem;
+}
+.simple-card--warmup { border-left: 3px solid #f97316; }
+.simple-card--cooldown { border-left: 3px solid #60a5fa; }
+
+.simple-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+.simple-name {
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: var(--text);
+  flex: 1;
+  min-width: 0;
+}
+.simple-duration {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* ── YouTube button ───────────────────────────────────── */
+.yt-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: #dc2626;
+  color: white;
+  font-size: 0.72rem;
+  font-weight: 500;
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.yt-btn:hover {
+  background: #b91c1c;
+}
+
+/* ── Week tip ─────────────────────────────────────────── */
+.week-tip {
+  margin-top: 2rem;
+  padding: 1.1rem 1.25rem;
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg-input));
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  border-radius: var(--radius-sm);
+}
+.week-tip-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent-light);
+  margin: 0 0 0.5rem;
+  opacity: 0.8;
+}
+.week-tip-text {
+  font-size: 0.88rem;
+  color: var(--text);
+  line-height: 1.7;
+  margin: 0;
+}
+
+/* ── Mobile ───────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .day-hero-name { font-size: 2rem; }
+  .ex-card-top { gap: 0.6rem; padding: 0.75rem; }
+  .ex-num { width: 24px; height: 24px; font-size: 0.7rem; }
+  .ex-name { font-size: 0.88rem; }
+  .ex-tech-toggle,
+  .ex-tech-body { padding-left: 2.25rem; }
 }

@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { supabase } from './lib/supabase';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import WelcomeScreen from './components/WelcomeScreen';
 import ProfilePanel from './components/ProfilePanel';
@@ -20,7 +21,44 @@ const EMPTY_PROFILE = {
   workoutType: '',
 };
 
-const BATCH_SIZE = 2;
+function getWeekStart() {
+  const now = new Date();
+  const day = now.getDay();
+  const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+  const monday = new Date(now);
+  monday.setDate(diff);
+  return monday.toISOString().split('T')[0];
+}
+
+function extractMuscleGroup(plan) {
+  return plan?.muscleGroup || '';
+}
+
+function extractExercises(plan) {
+  if (!plan || typeof plan !== 'object') return [];
+  return [
+    ...(plan.warmup || []),
+    ...(plan.main || []),
+    ...(plan.core || []),
+    ...(plan.cooldown || []),
+  ].map(e => e.name).filter(Boolean);
+}
+
+function getWeeklySplit(days) {
+  const splits = {
+    1: ['Cuerpo completo'],
+    2: ['Empuje — Pecho + Hombros + Tríceps', 'Jalón — Espalda + Bíceps + Piernas'],
+    3: ['Empuje — Pecho + Hombros + Tríceps', 'Jalón — Espalda + Bíceps', 'Piernas + Glúteos'],
+    4: ['Empuje — Pecho + Tríceps', 'Jalón — Espalda + Bíceps', 'Piernas + Glúteos', 'Hombros + Core'],
+    5: ['Pecho + Tríceps', 'Espalda + Bíceps', 'Piernas + Glúteos', 'Hombros + Core', 'Cuerpo completo'],
+    6: ['Empuje — Pecho + Tríceps', 'Jalón — Espalda + Bíceps', 'Piernas + Glúteos', 'Hombros + Pecho', 'Espalda + Bíceps', 'Piernas + Core'],
+  };
+  const n = Math.min(days.length, 6);
+  const splitList = splits[n] || splits[6];
+  const result = {};
+  days.forEach((day, i) => { result[day] = splitList[i % splitList.length]; });
+  return result;
+}
 
 export default function App() {
   const [rawProfile, setProfile] = useLocalStorage('fitcoach_profile', EMPTY_PROFILE);
@@ -35,20 +73,92 @@ export default function App() {
   const [reschedules, setReschedules] = useLocalStorage('fitcoach_reschedules', {});
   const [onboarded, setOnboarded] = useLocalStorage('fitcoach_onboarded', false);
 
-  const [batches, setBatches] = useState([]);
+  const [weekPlans, setWeekPlans] = useState({});
   const [loading, setLoading] = useState(false);
+  const [generatingDay, setGeneratingDay] = useState(null);
   const [error, setError] = useState(null);
   const [showProfilePanel, setShowProfilePanel] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [initializing, setInitializing] = useState(true);
 
-  // Group selected days into batches of BATCH_SIZE
-  const dayBatches = [];
-  for (let i = 0; i < selectedDays.length; i += BATCH_SIZE) {
-    dayBatches.push(selectedDays.slice(i, i + BATCH_SIZE));
-  }
-  const totalBatches = dayBatches.length;
-  const allGenerated = batches.length >= totalBatches;
-  const routine = batches.length > 0 ? batches.join('\n\n---\n\n') : null;
-  const nextBatchDays = !allGenerated ? dayBatches[batches.length] : null;
+  const saveTimer = useRef(null);
+  const isInit = useRef(true);
+
+  useEffect(() => {
+    async function init() {
+      try {
+        const { data: profileData } = await supabase
+          .from('profile')
+          .select('*')
+          .eq('id', 1)
+          .single();
+
+        if (profileData) {
+          setProfile({
+            name: profileData.name || '',
+            age: profileData.age?.toString() || '',
+            weight: profileData.weight?.toString() || '',
+            height: profileData.height?.toString() || '',
+            injuries: profileData.injuries || '',
+            goals: profileData.goals || '',
+            equipment: profileData.equipment || [],
+            level: profileData.level || '',
+            daysPerWeek: profileData.days_per_week?.toString() || '',
+            sessionTime: profileData.session_time || '',
+            workoutType: profileData.workout_type || '',
+          });
+          if (profileData.training_days?.length) setSelectedDays(profileData.training_days);
+          if (profileData.name) setOnboarded(true);
+        }
+
+        const weekStart = getWeekStart();
+        const { data: plans } = await supabase
+          .from('weekly_plans')
+          .select('day_name, workout_content')
+          .eq('week_start', weekStart);
+
+        if (plans?.length) {
+          const map = {};
+          plans.forEach(p => {
+            try { map[p.day_name] = JSON.parse(p.workout_content); } catch { /* skip malformed */ }
+          });
+          setWeekPlans(map);
+        }
+      } catch {
+        // Supabase unavailable, use localStorage fallback
+      } finally {
+        setInitializing(false);
+        setTimeout(() => { isInit.current = false; }, 100);
+      }
+    }
+    init();
+  }, []);
+
+  useEffect(() => {
+    if (!profile.name || isInit.current) return;
+    clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(async () => {
+      setSyncing(true);
+      await supabase.from('profile').upsert({
+        id: 1,
+        name: profile.name,
+        age: profile.age ? Number(profile.age) : null,
+        weight: profile.weight ? Number(profile.weight) : null,
+        height: profile.height ? Number(profile.height) : null,
+        injuries: profile.injuries,
+        goals: profile.goals,
+        equipment: profile.equipment,
+        level: profile.level,
+        days_per_week: profile.daysPerWeek ? Number(profile.daysPerWeek) : null,
+        session_time: profile.sessionTime,
+        workout_type: profile.workoutType,
+        training_days: selectedDays,
+        updated_at: new Date().toISOString(),
+      });
+      setSyncing(false);
+    }, 1500);
+    return () => clearTimeout(saveTimer.current);
+  }, [profile, selectedDays]);
 
   const isFirstVisit = !onboarded;
 
@@ -63,6 +173,9 @@ export default function App() {
     profile.sessionTime &&
     profile.workoutType &&
     selectedDays.length > 0;
+
+  const generatedDays = selectedDays.filter(d => weekPlans[d]);
+  const plans = generatedDays.map(d => weekPlans[d]).filter(Boolean);
 
   const handleStart = () => setOnboarded(true);
 
@@ -81,47 +194,102 @@ export default function App() {
   const handleNewWeek = () => {
     setDayStatuses({});
     setReschedules({});
+    setWeekPlans({});
   };
 
-  const generateBatch = async (batchIdx) => {
-    const days = dayBatches[batchIdx];
-    const isLastBatch = batchIdx === totalBatches - 1;
+  const getLastWeekSummary = async () => {
+    const weekStart = getWeekStart();
+    const lastWeekDate = new Date(weekStart);
+    lastWeekDate.setDate(lastWeekDate.getDate() - 7);
+    const lastWeekStart = lastWeekDate.toISOString().split('T')[0];
+    const { data } = await supabase
+      .from('weekly_plans')
+      .select('day_name, workout_content')
+      .eq('week_start', lastWeekStart);
+    if (!data?.length) return '';
+    return data.map(d => {
+      try {
+        const plan = JSON.parse(d.workout_content);
+        const exercises = [...(plan.main || []), ...(plan.core || [])].map(e => e.name).join(', ');
+        return `${d.day_name} (${plan.muscleGroup || ''}): ${exercises}`;
+      } catch {
+        return `${d.day_name}: ${d.workout_content.substring(0, 300)}`;
+      }
+    }).join('\n');
+  };
+
+  const callAPI = async (day, assignedGroup, usedExercises, isLastDay, lastWeekSummary) => {
+    const res = await fetch('/api/generate-routine', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        profile: { ...profile, equipment: profile.equipment.join(', ') },
+        day,
+        allDays: selectedDays,
+        assignedGroup,
+        usedExercises,
+        isLastDay,
+        lastWeekSummary,
+      }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || `Error ${res.status}`);
+    }
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    return data.content;
+  };
+
+  const generateAll = async () => {
+    setWeekPlans({});
     setLoading(true);
     setError(null);
 
     try {
-      const res = await fetch('/api/generate-routine', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          profile: { ...profile, equipment: profile.equipment.join(', ') },
-          days,
-          isLastBatch,
-        }),
-      });
+      const lastWeekSummary = await getLastWeekSummary();
+      const weekStart = getWeekStart();
+      const weeklySplit = getWeeklySplit(selectedDays);
+      const newPlans = {};
+      const usedExercises = [];
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || `Error ${res.status}`);
+      for (let i = 0; i < selectedDays.length; i++) {
+        const day = selectedDays[i];
+        const isLastDay = i === selectedDays.length - 1;
+        setGeneratingDay(day);
+
+        const content = await callAPI(day, weeklySplit[day], usedExercises.slice(-20), isLastDay, lastWeekSummary);
+
+        extractExercises(content).forEach(e => usedExercises.push(e));
+
+        await supabase.from('weekly_plans').delete()
+          .eq('week_start', weekStart).eq('day_name', day);
+        await supabase.from('weekly_plans').insert({
+          week_start: weekStart,
+          day_name: day,
+          workout_content: JSON.stringify(content),
+        });
+
+        newPlans[day] = content;
+        setWeekPlans({ ...newPlans });
       }
-
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      setBatches((prev) => [...prev, data.content]);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
+      setGeneratingDay(null);
     }
   };
 
-  const generateRoutine = () => {
-    setBatches([]);
-    // Use setTimeout(0) so batches resets before generateBatch reads dayBatches[0]
-    setTimeout(() => generateBatch(0), 0);
-  };
-
-  const generateNextBatch = () => generateBatch(batches.length);
+  if (initializing) {
+    return (
+      <div className="app">
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', color: '#888', fontSize: '1.1rem' }}>
+          Cargando...
+        </div>
+      </div>
+    );
+  }
 
   if (isFirstVisit) {
     return (
@@ -141,7 +309,10 @@ export default function App() {
           <div>
             <h1 className="header-title">FitCoach AI</h1>
             {profile.name && (
-              <span className="header-sub">Hola, {profile.name}</span>
+              <span className="header-sub">
+                Hola, {profile.name}
+                {syncing && <span style={{ opacity: 0.5 }}> · guardando…</span>}
+              </span>
             )}
           </div>
         </div>
@@ -173,13 +344,13 @@ export default function App() {
         <div className="generate-section">
           <button
             className="btn-generate"
-            onClick={generateRoutine}
+            onClick={generateAll}
             disabled={!canGenerate || loading}
           >
-            {loading && batches.length === 0 ? (
+            {loading ? (
               <>
                 <span className="generating-spinner">⚙️</span>
-                Generando rutina...
+                Generando {generatingDay}…
               </>
             ) : (
               '✨ Generar Rutina Semanal'
@@ -194,54 +365,28 @@ export default function App() {
             </p>
           )}
 
-          {loading && batches.length === 0 && (
+          {loading && (
             <p className="generating-text">
-              Generando {dayBatches[0]?.join(' y ')}… esto tarda unos segundos.
+              Generando {generatingDay}… ({generatedDays.length + 1} de {selectedDays.length})
             </p>
           )}
 
           {error && <div className="error-msg">⚠️ {error}</div>}
         </div>
 
-        {routine && (
-          <>
-            <section className="section-card">
-              <h2 className="section-title">
-                <span className="icon">🏋️</span>
-                Tu Rutina Semanal
-                {!allGenerated && (
-                  <span className="section-badge">
-                    {batches.length}/{totalBatches} bloques
-                  </span>
-                )}
-              </h2>
-              <WorkoutPlan routine={routine} />
-            </section>
-
-            {!allGenerated && (
-              <div className="generate-section">
-                <button
-                  className="btn-generate"
-                  onClick={generateNextBatch}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <>
-                      <span className="generating-spinner">⚙️</span>
-                      Generando {nextBatchDays?.join(' y ')}...
-                    </>
-                  ) : (
-                    `📅 Generar ${nextBatchDays?.join(' y ')} →`
-                  )}
-                </button>
-                {loading && (
-                  <p className="generating-text">
-                    Generando {nextBatchDays?.join(' y ')}… esto tarda unos segundos.
-                  </p>
-                )}
-              </div>
-            )}
-          </>
+        {plans.length > 0 && (
+          <section className="section-card">
+            <h2 className="section-title">
+              <span className="icon">🏋️</span>
+              Tu Rutina Semanal
+              {loading && (
+                <span className="section-badge">
+                  {generatedDays.length}/{selectedDays.length} días
+                </span>
+              )}
+            </h2>
+            <WorkoutPlan plans={plans} />
+          </section>
         )}
       </main>
 

@@ -29,6 +29,35 @@ const WORKOUT_TYPES = [
   { id: 'mixto', label: '⚡ Mixto (gimnasio + calistenia)' },
 ];
 
+const PRIMARY_GOALS = [
+  { id: 'perder_grasa', label: '🔥 Perder grasa' },
+  { id: 'ganar_musculo', label: '💪 Ganar músculo' },
+  { id: 'ganar_fuerza', label: '🏋️ Ganar fuerza' },
+  { id: 'mejorar_resistencia', label: '🏃 Mejorar resistencia' },
+  { id: 'tonificar', label: '✨ Tonificar' },
+  { id: 'rehabilitacion', label: '🩺 Rehabilitación' },
+];
+
+const FOCUS_AREAS = [
+  'Abdomen', 'Pecho', 'Espalda', 'Hombros',
+  'Brazos', 'Piernas', 'Glúteos', 'Todo el cuerpo',
+];
+
+function buildGoalsString(primaryGoal, focusAreas, goalDetails) {
+  const parts = [];
+  if (primaryGoal) {
+    const label = PRIMARY_GOALS.find(g => g.id === primaryGoal)?.label?.replace(/^[^ ]+ /, '');
+    if (label) parts.push(label);
+  }
+  if (focusAreas?.length) {
+    parts.push(`con enfoque en ${focusAreas.join(', ')}`);
+  }
+  if (goalDetails?.trim()) {
+    parts.push(goalDetails.trim());
+  }
+  return parts.join('. ');
+}
+
 export default function UserProfile({ profile, onChange }) {
   const handleChange = (field, value) => {
     onChange({ ...profile, [field]: value });
@@ -40,6 +69,26 @@ export default function UserProfile({ profile, onChange }) {
       ? current.filter((v) => v !== item)
       : [...current, item];
     handleChange(field, updated);
+  };
+
+  const handlePrimaryGoal = (goalId) => {
+    const newGoal = profile.primaryGoal === goalId ? '' : goalId;
+    const newGoals = buildGoalsString(newGoal, profile.focusAreas, profile.goalDetails);
+    onChange({ ...profile, primaryGoal: newGoal, goals: newGoals });
+  };
+
+  const handleFocusArea = (area) => {
+    const current = profile.focusAreas || [];
+    const updated = current.includes(area)
+      ? current.filter(a => a !== area)
+      : [...current, area];
+    const newGoals = buildGoalsString(profile.primaryGoal, updated, profile.goalDetails);
+    onChange({ ...profile, focusAreas: updated, goals: newGoals });
+  };
+
+  const handleGoalDetails = (text) => {
+    const newGoals = buildGoalsString(profile.primaryGoal, profile.focusAreas, text);
+    onChange({ ...profile, goalDetails: text, goals: newGoals });
   };
 
   return (
@@ -157,12 +206,44 @@ export default function UserProfile({ profile, onChange }) {
       </div>
 
       <div className="form-group">
-        <label htmlFor="p-goals">Objetivos — escribe exactamente lo que quieres lograr</label>
+        <label>Objetivo principal</label>
+        <div className="chip-group">
+          {PRIMARY_GOALS.map((g) => (
+            <button
+              key={g.id}
+              type="button"
+              className={`chip chip--wide ${profile.primaryGoal === g.id ? 'chip--active' : ''}`}
+              onClick={() => handlePrimaryGoal(g.id)}
+            >
+              {g.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="form-group">
+        <label>Zonas a trabajar</label>
+        <div className="chip-group">
+          {FOCUS_AREAS.map((area) => (
+            <button
+              key={area}
+              type="button"
+              className={`chip ${(profile.focusAreas || []).includes(area) ? 'chip--active' : ''}`}
+              onClick={() => handleFocusArea(area)}
+            >
+              {area}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="p-goal-details">Detalles adicionales (opcional)</label>
         <textarea
-          id="p-goals"
-          placeholder="Ej: brazos más fuertes, pecho definido, perder grasa abdominal, mejorar postura, correr 5km sin cansarme..."
-          value={profile.goals}
-          onChange={(e) => handleChange('goals', e.target.value)}
+          id="p-goal-details"
+          placeholder='Ej: "quiero correr un 5K en 3 meses", "me cuesta mucho la parte superior del cuerpo", "prefiero ejercicios compuestos"…'
+          value={profile.goalDetails || ''}
+          onChange={(e) => handleGoalDetails(e.target.value)}
         />
       </div>
 
