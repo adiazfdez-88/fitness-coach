@@ -233,18 +233,18 @@
 /* Location selector */
 .day-location {
   display: flex;
+  flex-wrap: wrap;
   gap: 3px;
   justify-content: center;
   width: 100%;
 }
 
 .loc-btn {
-  flex: 1;
   background: var(--bg-input);
   border: 1px solid var(--border);
   border-radius: 4px;
   font-size: 0.85rem;
-  padding: 3px 2px;
+  padding: 3px 4px;
   cursor: pointer;
   line-height: 1;
   transition: all 0.15s;
@@ -300,6 +300,28 @@
   .day-name {
     font-size: 0.65rem;
     color: var(--text-muted);
+  }
+
+  .loc-btn {
+    font-size: 0.75rem;
+    padding: 2px 3px;
+  }
+}
+
+@media (max-width: 480px) {
+  .calendar-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.4rem;
+  }
+
+  .loc-btn {
+    font-size: 0.7rem;
+    padding: 2px 2px;
+  }
+
+  .day-btn {
+    min-height: 68px;
+    padding: 0.5rem 0.15rem;
   }
 }
 
