@@ -195,10 +195,11 @@ export default function App() {
         training_days: selectedDays,
         updated_at: new Date().toISOString(),
       };
-      // Verificar si ya existe registro para este usuario
-      const { data: existing } = await supabase
-        .from('profile').select('user_id').eq('user_id', user.id).maybeSingle();
-      const { error: saveError } = existing
+      // Verificar si ya existe registro para este usuario (limit(1) tolera filas duplicadas)
+      const { data: rows } = await supabase
+        .from('profile').select('user_id').eq('user_id', user.id).limit(1);
+      const exists = rows && rows.length > 0;
+      const { error: saveError } = exists
         ? await supabase.from('profile').update(profileData).eq('user_id', user.id)
         : await supabase.from('profile').insert({ user_id: user.id, ...profileData });
       if (saveError) {
