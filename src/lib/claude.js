@@ -191,69 +191,26 @@ ${isCardioDay ? cardioStructure : isFuerzaCardio ? fuerzaCardioStructure : stren
 - NO incluyas URLs en el JSON`;
 }
 
-async function fetchWithRetry(url, options, maxRetries = 2) {
-  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    // Tiempo límite: 40 segundos por intento
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 40000);
-
-    let res;
-    try {
-      res = await fetch(url, { ...options, signal: controller.signal });
-    } catch (err) {
-      clearTimeout(timeout);
-      if (err.name === 'AbortError')
-        throw new Error('La IA tardó demasiado. Verifica tu conexión e inténtalo de nuevo.');
-      throw err;
-    }
-    clearTimeout(timeout);
-
-    if ((res.status === 429 || res.status === 529) && attempt < maxRetries) {
-      await sleep(1500 * (attempt + 1)); // 1.5s, 3s
-      continue;
-    }
-    return res;
-  }
-}
-
 export async function generateDayPlan({ profile, day, allDays, assignedGroup, usedExercises, isLastDay, lastWeekSummary }) {
-  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error('VITE_ANTHROPIC_API_KEY no configurada en Vercel.');
-
   const prompt = buildPrompt(
     { ...profile, equipment: Array.isArray(profile.equipment) ? profile.equipment.join(', ') : profile.equipment },
     day, allDays, assignedGroup, usedExercises, isLastDay, lastWeekSummary
   );
 
-  const res = await fetchWithRetry('https://api.anthropic.com/v1/messages', {
+  // Llamada al servidor de Vercel — más fiable en móvil que llamar a Anthropic directo
+  const res = await fetch('/api/generate-routine', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body: JSON.stringify({
-      model: 'claude-haiku-4-5',
-      max_tokens: 1600,
-      temperature: 0.3,
-      messages: [{ role: 'user', content: prompt }],
-    }),
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt }),
   });
 
+  const data = await res.json();
+
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    if (res.status === 429 || res.status === 529)
-      throw new Error('Demasiadas solicitudes. Espera unos segundos e inténtalo de nuevo.');
-    if (res.status === 401)
-      throw new Error('Error de autenticación con la API. Contacta al administrador.');
-    throw new Error(err.error?.message || `Error ${res.status} de la API de IA`);
+    throw new Error(data.error || `Error ${res.status} al generar la rutina`);
   }
 
-  const data = await res.json();
-  const plan = extractJSON(data.content[0].text);
+  const plan = extractJSON(data.text);
   if (!plan) throw new Error('La IA no devolvió un formato válido. Inténtalo de nuevo.');
   return plan;
 }
