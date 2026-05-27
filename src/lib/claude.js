@@ -191,16 +191,28 @@ ${isCardioDay ? cardioStructure : isFuerzaCardio ? fuerzaCardioStructure : stren
 - NO incluyas URLs en el JSON`;
 }
 
-async function fetchWithRetry(url, options, maxRetries = 3) {
+async function fetchWithRetry(url, options, maxRetries = 2) {
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    const res = await fetch(url, options);
-    if (res.status === 429 || res.status === 529) {
-      // Límite de velocidad — esperar y reintentar
-      if (attempt < maxRetries) {
-        await sleep(2000 * (attempt + 1)); // 2s, 4s, 6s
-        continue;
-      }
+    // Tiempo límite: 40 segundos por intento
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 40000);
+
+    let res;
+    try {
+      res = await fetch(url, { ...options, signal: controller.signal });
+    } catch (err) {
+      clearTimeout(timeout);
+      if (err.name === 'AbortError')
+        throw new Error('La IA tardó demasiado. Verifica tu conexión e inténtalo de nuevo.');
+      throw err;
+    }
+    clearTimeout(timeout);
+
+    if ((res.status === 429 || res.status === 529) && attempt < maxRetries) {
+      await sleep(1500 * (attempt + 1)); // 1.5s, 3s
+      continue;
     }
     return res;
   }
@@ -234,8 +246,10 @@ export async function generateDayPlan({ profile, day, allDays, assignedGroup, us
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     if (res.status === 429 || res.status === 529)
-      throw new Error('Demasiadas solicitudes al mismo tiempo. Inténtalo de nuevo en unos segundos.');
-    throw new Error(err.error?.message || `Error ${res.status} de la API`);
+      throw new Error('Demasiadas solicitudes. Espera unos segundos e inténtalo de nuevo.');
+    if (res.status === 401)
+      throw new Error('Error de autenticación con la API. Contacta al administrador.');
+    throw new Error(err.error?.message || `Error ${res.status} de la API de IA`);
   }
 
   const data = await res.json();
