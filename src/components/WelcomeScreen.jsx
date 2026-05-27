@@ -14,7 +14,7 @@ export default function WelcomeScreen({ profile, onChange, onStart }) {
       <div className="welcome-card">
         <div className="welcome-hero">
           <span className="welcome-emoji">💪</span>
-          <h1>FitCoach AI</h1>
+          <h1>EverStrong</h1>
           <p>Tu entrenador personal con inteligencia artificial</p>
         </div>
 

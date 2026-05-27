@@ -359,7 +359,7 @@ export default function App() {
         <div className="header-left">
           <span className="header-logo">💪</span>
           <div>
-            <h1 className="header-title">FitCoach AI</h1>
+            <h1 className="header-title">EverStrong</h1>
             {profile.name && (
               <span className="header-sub">
                 Hola, {profile.name}
@@ -457,7 +457,7 @@ export default function App() {
       </main>
 
       <footer className="footer">
-        FitCoach AI &mdash; Powered by Claude Sonnet
+        EverStrong &mdash; Powered by Claude AI
       </footer>
 
       {showProfilePanel && (

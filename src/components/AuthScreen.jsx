@@ -18,7 +18,7 @@ function LandingPage({ onStart }) {
           </svg>
         </div>
         <h1 className="landing-title">
-          <span className="landing-title-dark">FitCoach</span> <span className="landing-title-green">AI</span>
+          <span className="landing-title-dark">Ever</span><span className="landing-title-green">Strong</span>
         </h1>
         <div className="landing-tagline-row">
           <span className="landing-line" />
