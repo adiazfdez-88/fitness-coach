@@ -300,12 +300,8 @@ export default function App() {
       const daysInOrder = sortDays(selectedDays);
       const weeklySplit = getWeeklySplit(daysInOrder);
 
-      const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-
       await Promise.all(
         daysInOrder.map(async (day, i) => {
-          // Escalonar el inicio de cada llamada para no saturar la API
-          await sleep(i * 600);
           const content = await callAPI(
             day, weeklySplit[day], [], i === daysInOrder.length - 1, lastWeekSummary
           );

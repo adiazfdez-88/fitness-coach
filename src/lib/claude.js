@@ -192,25 +192,38 @@ ${isCardioDay ? cardioStructure : isFuerzaCardio ? fuerzaCardioStructure : stren
 }
 
 export async function generateDayPlan({ profile, day, allDays, assignedGroup, usedExercises, isLastDay, lastWeekSummary }) {
+  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error('API key no configurada.');
+
   const prompt = buildPrompt(
     { ...profile, equipment: Array.isArray(profile.equipment) ? profile.equipment.join(', ') : profile.equipment },
     day, allDays, assignedGroup, usedExercises, isLastDay, lastWeekSummary
   );
 
-  // Llamada al servidor de Vercel — más fiable en móvil que llamar a Anthropic directo
-  const res = await fetch('/api/generate-routine', {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt }),
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5',
+      max_tokens: 1600,
+      temperature: 0.3,
+      messages: [{ role: 'user', content: prompt }],
+    }),
   });
 
-  const data = await res.json();
-
   if (!res.ok) {
-    throw new Error(data.error || `Error ${res.status} al generar la rutina`);
+    const err = await res.json().catch(() => ({}));
+    if (res.status === 429) throw new Error('Límite de solicitudes. Espera unos segundos e inténtalo de nuevo.');
+    throw new Error(err.error?.message || `Error ${res.status} de la IA`);
   }
 
-  const plan = extractJSON(data.text);
+  const data = await res.json();
+  const plan = extractJSON(data.content[0].text);
   if (!plan) throw new Error('La IA no devolvió un formato válido. Inténtalo de nuevo.');
   return plan;
 }
